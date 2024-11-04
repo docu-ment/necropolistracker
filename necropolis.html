@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path of Exile Map Tracker</title>
+    <style>
+        .container {
+            padding: 20px;
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        .notification-status {
+            margin-left: 10px;
+            font-style: italic;
+        }
+        .voted-map-entry {
+            margin: 10px 0;
+        }
+        .map-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 5px;
+        }
+        .timer {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .vote-buttons {
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .vote-count {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <section>
+        <h1>Necropolis Tracker: Settlers of Kalguur</h1>
+        <h2>Notification Settings</h2>
+        <p>Select mods to be notified about:</p>
+        <form id="notificationForm">
+            <div class="form-row">
+                <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
+                <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
+                <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
+                <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
+                <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
+                <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
+                <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
+                <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
+                <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
+                <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
+                <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
+                <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
+                <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
+            </div>
+
+            <div class="form-row">
+                <label for="upvoteThreshold">Upvotes required for notification:</label>
+                <input type="number" id="upvoteThreshold" min="0" value="1" step="1">
+            </div>
+
+            <div class="form-row">
+                <label for="volumeControl">Volume: <span id="volumeValue">50%</span></label>
+                <input type="range" id="volumeControl" min="0" max="100" value="50" step="10" oninput="updateVolume()">
+            </div>
+
+            <button type="button" onclick="setNotifications()">Set Notifications</button>
+            <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
+        </form>
+    </section>
+
+       
+    <section>
+        <h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Voted Maps</span>
+                <span id="timer" class="timer"></span>
+            </div>
+        </h2>
+        <div id="votedMaps"></div>
+    </section>
+    
+
+    <section>
+        <h2>Select Map and Modifiers</h2>
+        <form id="modForm">
+            <p>Select Modifiers:</p>
+            <label><input type="checkbox" name="mod" value="exp"> Exp</label>
+            <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
+            <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
+            <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
+            <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
+            <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
+            <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
+            <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
+            <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
+            <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
+            <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
+            <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
+            <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>
+
+            <label for="mapSearch">Search for Map:</label>
+            <input type="text" id="mapSearch" placeholder="Enter map name" oninput="searchMap()">
+            <div id="mapSuggestions"></div>
+
+            <button type="button" onclick="submitVote()">Confirm</button>
+        </form>
+    </section>
+
+    <audio id="notificationSound" src="audio.mp3" preload="auto"></audio>
+
+
+    <script>
+         const maps = [
+            "Olmec's Sanctum", "Gardens Map", "Siege Map", "Bone Crypt Map", "Scriptorium Map", "Pillars of Arun",
+            "Dark Forest Map", "Lair Map", "Dunes Map", "Tropical Island Map", "Lava Lake Map", "Dungeon Map",
+            "Carcass Map", "Flooded Mine Map", "Whakawairua Tuahu", "Acton's Nightmare", "Dry Sea Map", "Strand Map",
+            "Marshes Map", "Bog Map", "Fungal Hollow Map", "Cage Map", "Armoury Map", "Overgrown Shrine Map",
+            "Vaults of Atziri", "Hallowed Ground", "The Twilight Temple", "Mesa Map", "Cemetery Map", "Cells Map",
+            "Vaal Pyramid Map", "Vault Map", "Relic Chambers Map", "Mausoleum Map", "Moon Temple Map",
+            "Maelström of Chaos", "The Vinktar Square", "Courtyard Map", "Colonnade Map", "Summit Map",
+            "Ancient City Map", "Atoll Map", "Plateau Map", "Fields Map", "Graveyard Map", "Mao Kun",
+            "Colosseum Map", "Castle Ruins Map", "Shore Map", "Promenade Map", "Belfry Map", "Estuary Map",
+            "Defiled Cathedral Map", "The Coward's Trial", "Spider Forest Map", "Forbidden Woods Map",
+            "Bramble Valley Map", "Racecourse Map", "Channel Map", "Cursed Crypt Map", "Chateau Map",
+            "Desert Map", "Jungle Valley Map", "City Square Map", "Cold River Map", "Ramparts Map", "Silo Map",
+            "Arachnid Tomb Map", "Coral Ruins Map", "Haunted Mansion Map", "Spider Lair Map", "Toxic Sewer Map",
+            "Basilica Map", "Palace Map", "Dig Map", "Sulphur Vents Map", "Burial Chambers Map", "Malformation Map",
+            "Leyline Map", "Underground Sea Map", "Crimson Township Map", "Port Map", "Crater Map", "Pier Map",
+            "Grotto Map", "Foundry Map", "The Putrid Cloister", "Death and Taxes", "Geode Map", "Infested Valley Map",
+            "Lookout Map", "Courthouse Map", "Necropolis Map", "Museum Map", "Arcade Map", "Ashen Wood Map",
+            "Desert Spring Map", "Glacier Map", "Caldera Map", "Doryani's Machinarium", "Poorjoy's Asylum",
+            "Beach Map", "Coves Map", "Maze Map", "Residence Map", "Temple Map", "Caer Blaidd, Wolfpack's Den",
+            "Pit Map", "Alleyways Map", "Terrace Map", "Underground River Map", "Academy Map", "Orchard Map",
+            "Lighthouse Map", "Pit of the Chimera Map", "Crystal Ore Map", "Sepulchre Map", "Vaal Temple Map",
+            "Lair of the Hydra Map", "Maze of the Minotaur Map", "Forge of the Phoenix Map", "Abomination Map",
+            "Citadel Map", "Fortress Map", "Ziggurat Map", "Sanctuary Map"
+        ];
+
+
+        let notificationPreferences = {};
+    let userVotes = {};
+    let notificationCount = 0;
+    let volumeLevel = 0.5;
+    let timerInterval;
+
+
+    function restoreNotifications() {
+        const storedPreferences = JSON.parse(localStorage.getItem('notificationPreferences'));
+        if (storedPreferences) {
+            notificationPreferences = storedPreferences;
+            for (let key in notificationPreferences) {
+                document.getElementById(`${key}Checkbox`).checked = notificationPreferences[key];
+            }
+        }
+    }
+
+    function setNotifications() {
+        notificationPreferences = {
+            exp: document.getElementById("expCheckbox").checked,
+            "divine orbs": document.getElementById("divineOrbsCheckbox").checked,
+            quantity: document.getElementById("quantityCheckbox").checked,
+            "quantity of strongest": document.getElementById("quantityStrongestCheckbox").checked,
+            possessed: document.getElementById("possessedCheckbox").checked,
+            "convert to magic packs": document.getElementById("convertMagicPacksCheckbox").checked,
+            packsize: document.getElementById("packsizeCheckbox").checked,
+            rarity: document.getElementById("rarityCheckbox").checked,
+            "rarity of strongest": document.getElementById("rarityStrongestCheckbox").checked,
+            "exalted orb": document.getElementById("exaltedOrbCheckbox").checked,
+            "annulment orb": document.getElementById("annulmentOrbCheckbox").checked,
+            "chaos orb": document.getElementById("chaosOrbCheckbox").checked,
+            "regal orb": document.getElementById("regalOrbCheckbox").checked
+        };
+
+        localStorage.setItem('notificationPreferences', JSON.stringify(notificationPreferences));
+        updateNotificationStatus();
+    }
+
+    function updateNotificationStatus() {
+        const threshold = document.getElementById("upvoteThreshold").value;
+        const selectedMods = Object.keys(notificationPreferences).filter(key => notificationPreferences[key]);
+
+        if (selectedMods.length > 0) {
+            const modsList = selectedMods.join(", ");
+            document.getElementById("notificationStatus").innerText = `Notification on ${modsList} listing with at least ${threshold} upvote(s).`;
+        } else {
+            document.getElementById("notificationStatus").innerText = "No notification settings saved.";
+        }
+    }
+
+    function updateVolume() {
+        const volumeControl = document.getElementById("volumeControl");
+        volumeLevel = volumeControl.value / 100;
+        document.getElementById("volumeValue").innerText = `${volumeControl.value}%`;
+    }
+
+    function notifyUser(selectedMap, mods, votes) {
+        const selectedMods = Object.keys(notificationPreferences).filter(key => notificationPreferences[key]);
+        const threshold = parseInt(document.getElementById("upvoteThreshold").value); // dynamically retrieve threshold
+
+        const lowercaseMods = mods.map(mod => mod.toLowerCase());
+        const shouldNotify = selectedMods.some(mod => lowercaseMods.includes(mod.toLowerCase())) && votes >= threshold;
+
+        if (shouldNotify) {
+            notificationCount++;
+            document.title = `(${notificationCount}) Necropolis Tracker: Settlers of Kalguur`;
+
+            const notification = new Notification("Map Voted!", {
+                body: `${selectedMap} has been voted with ${mods.join(", ")} modifier(s).`
+            });
+
+            const audio = document.getElementById("notificationSound");
+            audio.volume = volumeLevel;
+            audio.play();
+        }
+    }
+
+
+    function submitVote() {
+        const selectedModifiers = Array.from(document.querySelectorAll('#modForm input[name="mod"]:checked')).map(el => el.value);
+        const mapName = document.getElementById("mapSearch").value;
+
+        if (mapName && selectedModifiers.length) {
+            const voteKey = `${mapName}-${selectedModifiers.join(",")}`;
+            userVotes[voteKey] = (userVotes[voteKey] || 0) + 1;
+
+            const existingEntry = document.getElementById(voteKey);
+            if (existingEntry) existingEntry.remove();
+
+            const voteEntry = document.createElement("div");
+            voteEntry.className = "voted-map-entry";
+            voteEntry.id = voteKey;
+            voteEntry.innerHTML = `
+                <span class="map-name">${mapName} (${selectedModifiers.join(", ")})</span>
+                <span class="vote-buttons">
+                    <button onclick="upvote('${voteKey}')">Upvote</button>
+                    <span class="vote-count">${userVotes[voteKey]}</span>
+                    <button onclick="downvote('${voteKey}')">Downvote</button>
+                </span>
+            `;
+
+            document.getElementById("votedMaps").appendChild(voteEntry);
+
+            notifyUser(mapName, selectedModifiers, userVotes[voteKey]);
+            resetVoteInputs();
+        } else {
+            alert("Please enter a map name and select at least one modifier.");
+        }
+    }
+
+    function upvote(voteKey) {
+        userVotes[voteKey] = (userVotes[voteKey] || 0) + 1;
+        updateVoteDisplay(voteKey);
+        const [mapName, modifiers] = voteKey.split("-");
+        notifyUser(mapName, modifiers.split(","), userVotes[voteKey]);  // pass updated vote count
+    }
+
+    function downvote(voteKey) {
+        userVotes[voteKey] = (userVotes[voteKey] || 0) - 1;
+        updateVoteDisplay(voteKey);
+    }
+
+    function updateVoteDisplay(voteKey) {
+        const voteEntry = document.getElementById(voteKey);
+        if (voteEntry) {
+            const voteCountElement = voteEntry.querySelector('.vote-count');
+            voteCountElement.innerText = userVotes[voteKey] || 0;
+        }
+    }
+
+        function resetVoteInputs() {
+            document.getElementById("mapSearch").value = "";
+            const modCheckboxes = document.querySelectorAll('#modForm input[name="mod"]');
+            modCheckboxes.forEach(checkbox => checkbox.checked = false);
+        }
+
+        function searchMap() {
+            const searchValue = document.getElementById("mapSearch").value.toLowerCase();
+            const suggestions = maps.filter(map => map.toLowerCase().includes(searchValue));
+            displayMapSuggestions(suggestions);
+        }
+
+        function displayMapSuggestions(suggestions) {
+            const suggestionsContainer = document.getElementById("mapSuggestions");
+            suggestionsContainer.innerHTML = suggestions.map(map => `<div onclick="selectMap('${map}')">${map}</div>`).join("");
+        }
+
+        function selectMap(map) {
+            document.getElementById("mapSearch").value = map;
+            document.getElementById("mapSuggestions").innerHTML = ""; // clear suggestions
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);  // Clear any existing timer
+            timerInterval = setInterval(updateTimer, 1000);  // Start the timer
+            updateTimer();  // Initial call to set the timer display immediately
+        }
+
+        function resetVotes() {
+            userVotes = {};
+            document.getElementById('votedMaps').innerHTML = '';  // Clear the displayed voted maps
+            alert('Votes have been reset for the next hour.');
+            startTimer();  // Restart the timer
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1);
+            const timeDiff = nextHour - now;
+
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+
+            document.getElementById('timer').innerText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // Reset votes at the top of the next hour
+            if (timeDiff <= 0) {
+                resetVotes();
+            }
+        }
+
+        window.onload = function() {
+            startTimer();
+        };
+    </script>
+</body>
+</html>
+        
