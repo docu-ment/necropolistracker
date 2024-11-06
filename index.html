@@ -323,7 +323,8 @@ function displayVotedMaps() {
         }
     }
 
-    function updateVote(mapId, modifiers, voteType) {
+   // Function to update votes, including deleting maps if enough downvotes are received
+function updateVote(mapId, modifiers, voteType) {
     // Check if the user has already voted on this map
     if (userVotes[mapId] !== undefined) {
         alert('You have already voted for this map.');
@@ -331,32 +332,55 @@ function displayVotedMaps() {
     }
 
     const votesRef = ref(database, 'votes/' + mapId); // Reference to the votes in the database
-    
-    // Use the get method instead of onValue to read once
+
+    // Use the get method to read the votes once
     get(votesRef).then((snapshot) => {
-        let currentVotes = snapshot.val() || { votes: 0 }; // Default structure
+        let currentVotes = snapshot.val() || { votes: 0, downvotes: 0 }; // Default structure for votes and downvotes
 
         // Update votes count based on vote type
         if (voteType === 1) { // Upvote
             currentVotes.votes = (currentVotes.votes || 0) + 1;
+
+           
+
         } else if (voteType === -1) { // Downvote
             currentVotes.votes = (currentVotes.votes || 0) - 1;
+            currentVotes.downvotes = (currentVotes.downvotes || 0) + 1;
         }
 
-        // Update the database with the new votes count
-        set(votesRef, currentVotes)
-            .then(() => {
-                console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
-                userVotes[mapId] = voteType; // Mark this map as voted
-                loadVotesFromFirebase(); // Refresh the display
-            })
-            .catch((error) => {
-                console.error("Error updating votes:", error);
-            });
+        // Check if the map should be deleted due to too many downvotes
+        if (currentVotes.downvotes >= 4) {  // You can adjust the threshold (e.g., 3 downvotes)
+            deleteMap(mapId); // Call the delete function to remove the map
+        } else {
+            // Update the database with the new votes count
+            set(votesRef, currentVotes)
+                .then(() => {
+                    console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
+                    userVotes[mapId] = voteType; // Mark this map as voted
+                    loadVotesFromFirebase(); // Refresh the display
+                })
+                .catch((error) => {
+                    console.error("Error updating votes:", error);
+                });
+        }
     }).catch((error) => {
         console.error("Error reading votes:", error);
     });
 }
+
+// Function to delete a map from the database
+function deleteMap(mapId) {
+    const mapRef = ref(database, 'votes/' + mapId); // Reference to the specific map in the database
+    set(mapRef, null)  // Set the map data to null to delete it
+        .then(() => {
+            console.log(`Map ${mapId} deleted due to too many downvotes.`);
+            loadVotesFromFirebase(); // Refresh the display to reflect the deletion
+        })
+        .catch((error) => {
+            console.error("Error deleting map:", error);
+        });
+}
+
 
 
         function checkNotifications(map) {
