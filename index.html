@@ -9,7 +9,6 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
     <script src="cookies.js" defer></script>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
     
     <style>
         /* Basic reset for a dark theme */
@@ -177,18 +176,15 @@
 
 
     </style>
-    
     <body>
         <section>
 
-      <!-- Cookie Consent Banner -->
-<div id="cookies-banner" style="display: none;">
-    <p>This website uses cookies to ensure you get the best experience on our website. 
-       <button id="accept-all-cookies">Accept All Cookies</button>
-       <button id="accept-essential-cookies">Accept Essential Cookies</button>
-    </p>
+            <!-- Cookie banner -->
+<div id="cookies-banner" style="display:none;">
+    <p>We use cookies to improve your experience. <button id="accept-cookies">Accept Cookies</button></p>
 </div>
 
+            
 
 
             
@@ -220,7 +216,7 @@
                 </div>
                 <label>
                     <input type="checkbox" id="enable-notifications" />
-                    Enable Browser Notifications
+                    Enable Notifications
                 </label>
 
                 <button type="button" onclick="setNotifications()">Set Notifications</button>
@@ -299,7 +295,6 @@
             upvoteThreshold: 1,
             volume: 50
         };
-        
 
 
         
@@ -683,7 +678,7 @@ function showBackgroundNotification() {
 
         // Optionally, you can add event listeners for notification actions
         notification.onclick = function () {
-            window.open('https://yourwebsite.com');
+            window.open('https://docu-ment.github.io/necropolistracker/');
         };
     }
 }
