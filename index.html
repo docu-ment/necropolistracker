@@ -7,7 +7,7 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
-    <script type="module" src="index.obfuscated.js"></script>
+    <script src="cookies.js" defer></script>
     
     <style>
         /* Basic reset for a dark theme */
@@ -54,13 +54,7 @@
             text-align: center;
         }
     
-        
-        .map-icon {
-            width: 30px;
-            height: 30px;
-            margin-right: 5px;
-        }
-    
+           
         .timer {
             font-weight: bold;
             margin-left: 10px;
@@ -142,10 +136,62 @@
         .form-row label {
             margin-right: 0px;
         }
+
+        .cookie-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    z-index: 1000;
+}
+
+.cookie-banner button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+.cookie-banner button:hover {
+    background-color: #45a049;
+}
+
+.privacy-link {
+    color: #4CAF50;
+    text-decoration: underline;
+    margin-left: 10px;
+}
+
+.privacy-link:hover {
+    color: #45a049;
+}
+
+
+
+
     </style>
     
     <body>
         <section>
+
+        
+            <!-- cookie-banner.html -->
+<div id="cookie-banner" class="cookie-banner">
+    <p>This website uses cookies to ensure you get the best experience. 
+        <a href="/privacy-policy" target="_blank" class="privacy-link">Learn more</a>.
+    </p>
+    <button id="accept-cookies">Accept</button>
+    <button id="decline-cookies">Decline</button>
+</div>
+
+
+
+            
             <h1>Necropolis Tracker: Settlers of Kalguur</h1>
             <h2>Notification Settings</h2>
             <p>Select mod to be notified about:</p>
@@ -595,9 +641,53 @@ function updateTabTitle(mapName, upvotes) {
             startTimer();
         };
 
+
+// Check if notifications are already granted or denied
+function checkNotificationPermission() {
+    if (Notification.permission === 'granted') {
+        // Notifications are already enabled
+        console.log('Notifications are enabled');
+    } else if (Notification.permission === 'denied') {
+        // Notifications are disabled
+        console.log('Notifications are denied');
+    } else {
+        // Ask for permission to show notifications
+        requestNotificationPermission();
+    }
+}
+
+// Request notification permission from the user
+function requestNotificationPermission() {
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            console.log('Notification permission granted');
+            // Optionally, trigger the first notification here
+        } else {
+            console.log('Notification permission denied');
+        }
+    });
+}
+
+// Handle showing notifications even when the tab is in the background
+function showBackgroundNotification() {
+    if (Notification.permission === 'granted') {
+        const notification = new Notification('You have a new update!', {
+            body: 'Check out the latest content!',
+            icon: '/path/to/icon.png'
+        });
+
+        // Optionally, you can add event listeners for notification actions
+        notification.onclick = function () {
+            window.open('https://yourwebsite.com');
+        };
+    }
+}
+
+
         document.addEventListener('DOMContentLoaded', () => {
             loadVotesFromFirebase();
             startTimer();
+            checkNotificationPermission();
     
             // Expose functions to the global scope
             window.setNotifications = setNotifications;
