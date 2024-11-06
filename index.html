@@ -3,119 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Path of Exile Map Tracker</title>
+    <title>Necropolis Tracker</title>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
+    
     <style>
-        .container {
-            padding: 20px;
+        /* Basic reset for a dark theme */
+        body {
+            background-color: #121212; /* Dark background */
+            color: white; /* Light text */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 50;
         }
+    
+        h1, h2 {
+            color: #e0e0e0; /* Lighter text for headers */
+        }
+    
+
+        .container {
+            padding: 10px;
+        }
+    
         .form-row {
             margin-bottom: 15px;
         }
+    
         .notification-status {
             margin-left: 10px;
             font-style: italic;
+            color: #ccc; /* Light gray color for status text */
         }
+    
         .voted-map-entry {
             margin: 10px 0;
+            background-color: #333; /* Dark background for map entries */
+            padding: 10px;
+            border-radius: 5px;
+            width: 50%; /* Reduced width for voted map entries */
+            text-align: center;
         }
+    
+        
         .map-icon {
             width: 30px;
             height: 30px;
             margin-right: 5px;
         }
+    
         .timer {
             font-weight: bold;
             margin-left: 10px;
+            color: #ffff00; /* Yellow for the timer, more accessible */
         }
+    
         .vote-buttons {
             display: inline-block;
-            margin-left: 10px;
+            margin-left: 15px;
         }
+    
         .vote-count {
             margin-left: 5px;
         }
-    </style>
-</head>
-<body>
-    <section>
-        <h1>Necropolis Tracker: Settlers of Kalguur</h1>
-        <h2>Notification Settings</h2>
-        <p>Select mods to be notified about:</p>
-        <form id="notificationForm">
-            <div class="form-row">
-                <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
-                <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
-                <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
-                <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
-                <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
-                <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
-                <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
-                <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
-                <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
-                <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
-                <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
-                <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
-                <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
-            </div>
-
-            <div class="form-row">
-                <label for="upvoteThreshold">Upvotes required for notification:</label>
-                <input type="number" id="upvoteThreshold" min="0" value="1" step="1">
-            </div>
-
-            <div class="form-row">
-                <label for="volumeControl">Volume: <span id="volumeValue">50%</span></label>
-                <input type="range" id="volumeControl" min="0" max="100" value="50" step="10" oninput="updateVolume()">
-            </div>
-
-            <button type="button" onclick="setNotifications()">Set Notifications</button>
-            <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
-        </form>
-    </section>
-
-       
-    <section>
-        <h2>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span>Voted Maps</span>
-                <span id="timer" class="timer"></span>
-            </div>
-        </h2>
-        <div id="votedMaps"></div>
-    </section>
     
+        #mapSuggestions {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #444; /* Dark border */
+            max-height: 250px;
+            overflow-y: auto;
+            position: absolute; /* Ensure suggestions are positioned correctly */
+            z-index: 2000; /* Make sure suggestions appear above other content */
+            background-color: #222; /* Dark background for suggestions */
+        }
+    
+        #mapSuggestions li {
+            padding: 11px;
+            cursor: pointer;
+            color: white; /* White text for suggestions */
+        }
+    
+        #mapSuggestions li:hover {
+            background-color: #444; /* Dark hover effect */
+        }
+    
+        .voted-maps-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #e0e0e0;
+}
+    
+        label {
+            color: #ccc; /* Light gray color for labels */
+        }
+    
+        button {
+            background-color: #444; /* Dark button background */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        button:hover {
+            background-color: #666; /* Lighter background on hover */
+        }
+    
+        input[type="text"], input[type="number"], input[type="range"] {
+            background-color: #333; /* Dark input background */
+            color: white; /* White text for input */
+            border: 1px solid #555; /* Slightly lighter border */
+            padding: 5px;
+            border-radius: 1px;
+        }
+    
+        input[type="text"]:focus, input[type="number"]:focus, input[type="range"]:focus {
+            border-color: #888; /* Highlight border color when focused */
+        }
+    
+        /* For the notification volume range */
+        #volumeValue {
+            color: #ccc;
+        }
+    
+        .form-row label {
+            margin-right: 0px;
+        }
+    </style>
+    
+    <body>
+        <section>
+            <h1>Necropolis Tracker: Settlers of Kalguur</h1>
+            <h2>Notification Settings</h2>
+            <p>Select mods to be notified about:</p>
+            <form id="notificationForm">
+                <div class="form-row">
+                    <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
+                    <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
+                    <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
+                    <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
+                    <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
+                    <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
+                    <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
+                    <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
+                    <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
+                    <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
+                    <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
+                    <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
+                    <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
+                </div>
+    
+                <div class="form-row">
+                    <label for="upvoteThreshold">Upvotes required for notification:</label>
+                    <input type="number" id="upvoteThreshold" min="0" value="1" step="1">
+                    <label for="volumeControl"> Volume: <span id="volumeValue">50%</span></label>
+                    <input type="range" id="volumeControl" min="0" max="100" value="50" step="10" oninput="updateVolume()">
+                </div>
+    
+                <button type="button" onclick="setNotifications()">Set Notifications</button>
+                <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
+            </form>
+        </section>
+    
+        <section>
+            <h2 class="voted-maps-header">
+                <div>
+                    <span>Voted Maps</span>
+                    <span id="timer" class="timer">1:19</span>
+                </div>
+            </h2>
+    
+            <div id="votedMaps">
+                <ul id="votedMapsList"></ul>
+            </div>
+        </section>
+    
+        <section>
+            <h2>Select Map and Modifiers</h2>
+            <form id="modForm">
+                <p>Select Modifiers:</p>
+                <label><input type="checkbox" name="mod" value="exp"> Exp</label>
+                <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
+                <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
+                <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
+                <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
+                <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
+                <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
+                <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
+                <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
+                <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
+                <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>
+    
+                <div>
+                    <input type="text" id="mapInput" placeholder="Enter map name" />
+                </div>
+                <ul id="mapSuggestions"></ul>
+    
+                <button type="button" onclick="submitVote()">Confirm</button>
+            </form>
+        </section>
 
-    <section>
-        <h2>Select Map and Modifiers</h2>
-        <form id="modForm">
-            <p>Select Modifiers:</p>
-            <label><input type="checkbox" name="mod" value="exp"> Exp</label>
-            <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
-            <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
-            <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
-            <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
-            <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
-            <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
-            <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
-            <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
-            <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
-            <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
-            <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
-            <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>
-
-            <label for="mapSearch">Search for Map:</label>
-            <input type="text" id="mapSearch" placeholder="Enter map name" oninput="searchMap()">
-            <div id="mapSuggestions"></div>
-
-            <button type="button" onclick="submitVote()">Confirm</button>
-        </form>
-    </section>
+      
+    
 
     <audio id="notificationSound" src="audio.mp3" preload="auto"></audio>
 
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"; 
+        import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+        
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp8H_Lcu1ySmbmAUEwRPSkwHbUBWHSx2Y",
+            authDomain: "necropolistracker.firebaseapp.com",
+            databaseURL: "https://necropolistracker-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "necropolistracker",
+            storageBucket: "necropolistracker.appspot.com",
+            messagingSenderId: "327513254673",
+            appId: "1:327513254673:web:00a4feff1acc6fe9be7ab0",
+            measurementId: "G-5FQKZ5M6KC"
+        };
 
-    <script>
-         const maps = [
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase();
+        const db = getFirestore(app);
+        
+        let votedMaps = {};
+ 
+        let userVotes = {};
+        
+        const maps = [
             "Olmec's Sanctum", "Gardens Map", "Siege Map", "Bone Crypt Map", "Scriptorium Map", "Pillars of Arun",
             "Dark Forest Map", "Lair Map", "Dunes Map", "Tropical Island Map", "Lava Lake Map", "Dungeon Map",
             "Carcass Map", "Flooded Mine Map", "Whakawairua Tuahu", "Acton's Nightmare", "Dry Sea Map", "Strand Map",
@@ -140,194 +266,273 @@
             "Lair of the Hydra Map", "Maze of the Minotaur Map", "Forge of the Phoenix Map", "Abomination Map",
             "Citadel Map", "Fortress Map", "Ziggurat Map", "Sanctuary Map"
         ];
+        
+        function loadVotesFromFirebase() {
+            const votesRef = ref(database, 'votes');
+            onValue(votesRef, (snapshot) => {
+                votedMaps = snapshot.val() || {};
+                displayVotedMaps();
+            });
+        }
 
+        function confirmVote(mapInput, modifiers) {
+    const voteData = {
+        modifiers: modifiers // Assuming modifiers is an array
+    };
 
-        let notificationPreferences = {};
-    let userVotes = {};
-    let notificationCount = 0;
-    let volumeLevel = 0.5;
-    let timerInterval;
+    const votedMapsRef = firebase.database().ref(`votes/${mapInput}`);
+    votedMapsRef.set(voteData, (error) => {
+        if (error) {
+            console.error('Error uploading data:', error);
+        } else {
+            console.log('Vote confirmed for', mapInput);
+            displayVotedMaps(); // Refresh the list after confirming
+        }
+    });
+}
 
+function displayVotedMaps() {
+        const votedMapsList = document.getElementById('votedMapsList');
+        votedMapsList.innerHTML = ''; // Clear existing list
 
-    function restoreNotifications() {
-        const storedPreferences = JSON.parse(localStorage.getItem('notificationPreferences'));
-        if (storedPreferences) {
-            notificationPreferences = storedPreferences;
-            for (let key in notificationPreferences) {
-                document.getElementById(`${key}Checkbox`).checked = notificationPreferences[key];
+        for (const mapName in votedMaps) {
+            if (votedMaps.hasOwnProperty(mapName)) {
+                const mapData = votedMaps[mapName];
+                const modifiersList = mapData.modifiers.join(', '); // Join modifiers into a string
+                const votesCount = mapData.votes || 0; // Get the vote count
+
+                // Create a list item with the desired format
+                const listItem = document.createElement('li');
+                listItem.className = 'voted-map-entry'; // Add a class for styling
+                listItem.textContent = `${mapName} | Modifiers: [${modifiersList}] | Votes: ${votesCount}  `;
+
+                // Create upvote and downvote buttons
+                const upvoteButton = document.createElement('button');
+                upvoteButton.textContent = 'Upvote ';
+                upvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, 1); // Upvote logic
+
+                const downvoteButton = document.createElement('button');
+                downvoteButton.textContent =  ' Downvote';
+                downvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, -1); // Downvote logic
+
+                // Append buttons to list item
+                listItem.appendChild(upvoteButton);
+                listItem.appendChild(downvoteButton);
+                votedMapsList.appendChild(listItem);
             }
         }
     }
 
-    function setNotifications() {
-        notificationPreferences = {
-            exp: document.getElementById("expCheckbox").checked,
-            "divine orbs": document.getElementById("divineOrbsCheckbox").checked,
-            quantity: document.getElementById("quantityCheckbox").checked,
-            "quantity of strongest": document.getElementById("quantityStrongestCheckbox").checked,
-            possessed: document.getElementById("possessedCheckbox").checked,
-            "convert to magic packs": document.getElementById("convertMagicPacksCheckbox").checked,
-            packsize: document.getElementById("packsizeCheckbox").checked,
-            rarity: document.getElementById("rarityCheckbox").checked,
-            "rarity of strongest": document.getElementById("rarityStrongestCheckbox").checked,
-            "exalted orb": document.getElementById("exaltedOrbCheckbox").checked,
-            "annulment orb": document.getElementById("annulmentOrbCheckbox").checked,
-            "chaos orb": document.getElementById("chaosOrbCheckbox").checked,
-            "regal orb": document.getElementById("regalOrbCheckbox").checked
-        };
-
-        localStorage.setItem('notificationPreferences', JSON.stringify(notificationPreferences));
-        updateNotificationStatus();
+    function updateVote(mapId, modifiers, voteType) {
+    // Check if the user has already voted on this map
+    if (userVotes[mapId] !== undefined) {
+        alert('You have already voted for this map.');
+        return; // Prevent further voting on the same map
     }
 
-    function updateNotificationStatus() {
-        const threshold = document.getElementById("upvoteThreshold").value;
-        const selectedMods = Object.keys(notificationPreferences).filter(key => notificationPreferences[key]);
+    const votesRef = ref(database, 'votes/' + mapId); // Reference to the votes in the database
+    
+    // Use the get method instead of onValue to read once
+    get(votesRef).then((snapshot) => {
+        let currentVotes = snapshot.val() || { votes: 0 }; // Default structure
 
-        if (selectedMods.length > 0) {
-            const modsList = selectedMods.join(", ");
-            document.getElementById("notificationStatus").innerText = `Notification on ${modsList} listing with at least ${threshold} upvote(s).`;
-        } else {
-            document.getElementById("notificationStatus").innerText = "No notification settings saved.";
+        // Update votes count based on vote type
+        if (voteType === 1) { // Upvote
+            currentVotes.votes = (currentVotes.votes || 0) + 1;
+        } else if (voteType === -1) { // Downvote
+            currentVotes.votes = (currentVotes.votes || 0) - 1;
         }
-    }
 
-    function updateVolume() {
-        const volumeControl = document.getElementById("volumeControl");
-        volumeLevel = volumeControl.value / 100;
-        document.getElementById("volumeValue").innerText = `${volumeControl.value}%`;
-    }
-
-    function notifyUser(selectedMap, mods, votes) {
-        const selectedMods = Object.keys(notificationPreferences).filter(key => notificationPreferences[key]);
-        const threshold = parseInt(document.getElementById("upvoteThreshold").value); // dynamically retrieve threshold
-
-        const lowercaseMods = mods.map(mod => mod.toLowerCase());
-        const shouldNotify = selectedMods.some(mod => lowercaseMods.includes(mod.toLowerCase())) && votes >= threshold;
-
-        if (shouldNotify) {
-            notificationCount++;
-            document.title = `(${notificationCount}) Necropolis Tracker: Settlers of Kalguur`;
-
-            const notification = new Notification("Map Voted!", {
-                body: `${selectedMap} has been voted with ${mods.join(", ")} modifier(s).`
+        // Update the database with the new votes count
+        set(votesRef, currentVotes)
+            .then(() => {
+                console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
+                userVotes[mapId] = voteType; // Mark this map as voted
+                loadVotesFromFirebase(); // Refresh the display
+            })
+            .catch((error) => {
+                console.error("Error updating votes:", error);
             });
+    }).catch((error) => {
+        console.error("Error reading votes:", error);
+    });
+}
 
-            const audio = document.getElementById("notificationSound");
-            audio.volume = volumeLevel;
-            audio.play();
+
+        function checkNotifications(map) {
+            const threshold = parseInt(document.getElementById('upvoteThreshold').value) || 1;
+            const mapVotes = votedMaps[map];
+            const upvotes = mapVotes?.upvotes || 0;
+
+            const selectedModifiers = [...document.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+            if (upvotes >= threshold) {
+                const sound = document.getElementById('notificationSound');
+                sound.play();
+                alert(`Notification! ${map} has reached ${upvotes} upvotes with modifiers: ${selectedModifiers.join(', ')}`);
+            }
         }
-    }
 
-
-    function submitVote() {
-        const selectedModifiers = Array.from(document.querySelectorAll('#modForm input[name="mod"]:checked')).map(el => el.value);
-        const mapName = document.getElementById("mapSearch").value;
-
-        if (mapName && selectedModifiers.length) {
-            const voteKey = `${mapName}-${selectedModifiers.join(",")}`;
-            userVotes[voteKey] = (userVotes[voteKey] || 0) + 1;
-
-            const existingEntry = document.getElementById(voteKey);
-            if (existingEntry) existingEntry.remove();
-
-            const voteEntry = document.createElement("div");
-            voteEntry.className = "voted-map-entry";
-            voteEntry.id = voteKey;
-            voteEntry.innerHTML = `
-                <span class="map-name">${mapName} (${selectedModifiers.join(", ")})</span>
-                <span class="vote-buttons">
-                    <button onclick="upvote('${voteKey}')">Upvote</button>
-                    <span class="vote-count">${userVotes[voteKey]}</span>
-                    <button onclick="downvote('${voteKey}')">Downvote</button>
-                </span>
-            `;
-
-            document.getElementById("votedMaps").appendChild(voteEntry);
-
-            notifyUser(mapName, selectedModifiers, userVotes[voteKey]);
-            resetVoteInputs();
-        } else {
-            alert("Please enter a map name and select at least one modifier.");
+        function setNotifications() {
+            const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+            const upvoteThreshold = document.getElementById('upvoteThreshold').value;
+            const volume = document.getElementById('volumeControl').value;
+    
+            const notificationStatus = document.getElementById('notificationStatus');
+            notificationStatus.textContent = `Notifications set for mods: ${selectedMods.join(', ')} with threshold: ${upvoteThreshold} at volume: ${volume}%`;
         }
-    }
 
-    function upvote(voteKey) {
-        userVotes[voteKey] = (userVotes[voteKey] || 0) + 1;
-        updateVoteDisplay(voteKey);
-        const [mapName, modifiers] = voteKey.split("-");
-        notifyUser(mapName, modifiers.split(","), userVotes[voteKey]);  // pass updated vote count
-    }
+        
 
-    function downvote(voteKey) {
-        userVotes[voteKey] = (userVotes[voteKey] || 0) - 1;
-        updateVoteDisplay(voteKey);
-    }
-
-    function updateVoteDisplay(voteKey) {
-        const voteEntry = document.getElementById(voteKey);
-        if (voteEntry) {
-            const voteCountElement = voteEntry.querySelector('.vote-count');
-            voteCountElement.innerText = userVotes[voteKey] || 0;
+        function updateVolume() {
+            const volumeControl = document.getElementById('volumeControl');
+            const volumeValue = document.getElementById('volumeValue');
+            volumeValue.innerText = volumeControl.value + "%";
+            const sound = document.getElementById('notificationSound');
+            sound.volume = volumeControl.value / 100;
         }
+
+        function submitVote() {
+    const mapInput = document.getElementById('mapInput').value.trim();
+    const modifiers = Array.from(document.querySelectorAll('input[name="mod"]:checked')).map(input => input.value);
+
+    // Check if the map is valid before submitting
+    if (!maps.includes(mapInput)) {
+        alert('Please select a valid map from the suggestions or enter a correct map name.');
+        return;
     }
 
-        function resetVoteInputs() {
-            document.getElementById("mapSearch").value = "";
-            const modCheckboxes = document.querySelectorAll('#modForm input[name="mod"]');
-            modCheckboxes.forEach(checkbox => checkbox.checked = false);
-        }
+    if (!modifiers.length) {
+        alert('Please select at least one modifier.');
+        return;
+    }
+
+    // Check if the user has already voted
+    if (userVotes[mapInput] !== undefined) {
+        alert('You have already voted for this map.');
+        return; // Prevent further voting on the same map
+    }
+
+    // This sets the vote and updates the database
+    const votesRef = ref(database, 'votes/' + mapInput);
+    set(votesRef, {
+        modifiers: modifiers,
+        votes: (votedMaps[mapInput]?.votes || 0) + 1,
+        timestamp: serverTimestamp()
+    })
+    .then(() => {
+        console.log(`Vote submitted for ${mapInput}: ${modifiers}`);
+        userVotes[mapInput] = 1; // Mark this map as voted
+        alert(`Thank you for voting for ${mapInput}!`);
+        displayVotedMaps(); // Ensure the list updates immediately after submitting a vote
+    })
+    .catch((error) => {
+        console.error('Error submitting vote:', error);
+        alert('Failed to submit vote. Please try again later.');
+    });
+
+    document.getElementById('mapInput').value = '';
+    document.getElementById('mapSuggestions').innerHTML = ''; // Clear suggestions after vote
+    displayVotedMaps();
+}
 
         function searchMap() {
-            const searchValue = document.getElementById("mapSearch").value.toLowerCase();
-            const suggestions = maps.filter(map => map.toLowerCase().includes(searchValue));
+            const input = document.getElementById('mapInput').value.toLowerCase();
+            const suggestions = maps.filter(map => map.toLowerCase().includes(input));
             displayMapSuggestions(suggestions);
         }
 
         function displayMapSuggestions(suggestions) {
-            const suggestionsContainer = document.getElementById("mapSuggestions");
-            suggestionsContainer.innerHTML = suggestions.map(map => `<div onclick="selectMap('${map}')">${map}</div>`).join("");
+            const suggestionsList = document.getElementById('mapSuggestions');
+            suggestionsList.innerHTML = "";
+            suggestions.forEach(map => {
+                const listItem = document.createElement("li");
+                listItem.textContent = map;
+                listItem.onclick = () => {
+                    document.getElementById('mapInput').value = map;
+                    suggestionsList.innerHTML = "";
+                };
+                suggestionsList.appendChild(listItem);
+            });
         }
 
-        function selectMap(map) {
-            document.getElementById("mapSearch").value = map;
-            document.getElementById("mapSuggestions").innerHTML = ""; // clear suggestions
-        }
-
+        document.getElementById('mapInput').addEventListener('input', searchMap);
+        
         function startTimer() {
-            clearInterval(timerInterval);  // Clear any existing timer
-            timerInterval = setInterval(updateTimer, 1000);  // Start the timer
-            updateTimer();  // Initial call to set the timer display immediately
+    const timerDisplay = document.getElementById('timer');
+
+    // Calculate the time remaining until the next full hour
+    function getNextHour() {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0).getTime();
+    }
+
+    let nextResetTime = getNextHour();
+
+    function updateTimer() {
+        const now = Date.now();
+        const timeRemaining = nextResetTime - now;
+
+        // Calculate minutes and seconds left
+        const minutes = Math.floor(timeRemaining / 60000);
+        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+
+        // Update the timer display
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        if (timeRemaining <= 0) {
+            resetVotes(); // Reset votes when countdown reaches 0
+            nextResetTime = getNextHour(); // Set next reset time to the following full hour
         }
+    }
+
+    // Clear any existing interval to prevent overlaps
+    if (window.countdownInterval) clearInterval(window.countdownInterval);
+
+    // Start a new countdown interval
+    window.countdownInterval = setInterval(updateTimer, 1000); // Update every second
+    updateTimer(); // Initial call to set display immediately
+}
 
         function resetVotes() {
-            userVotes = {};
-            document.getElementById('votedMaps').innerHTML = '';  // Clear the displayed voted maps
-            alert('Votes have been reset for the next hour.');
-            startTimer();  // Restart the timer
+            const votesRef = ref(database, 'votes');
+            set(votesRef, {}); // Reset all votes
+            alert("All votes have been reset.");
         }
 
-        function updateTimer() {
-            const now = new Date();
-            const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1);
-            const timeDiff = nextHour - now;
-
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-
-            document.getElementById('timer').innerText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-            // Reset votes at the top of the next hour
-            if (timeDiff <= 0) {
-                resetVotes();
-            }
-        }
-
+        // Load existing votes from Firebase on page load
         window.onload = function() {
+            loadVotesFromFirebase();
             startTimer();
         };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVotesFromFirebase();
+            startTimer();
+    
+            // Expose functions to the global scope
+            window.setNotifications = setNotifications;
+            window.submitVote = submitVote;
+            window.updateVolume = updateVolume;
+    
+            const mapInput = document.getElementById('mapInput');
+            mapInput.addEventListener('input', () => {
+                const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
+                const mapSuggestions = document.getElementById('mapSuggestions');
+                mapSuggestions.innerHTML = ''; // Clear previous suggestions
+
+                // Display suggestions
+                suggestions.forEach(map => {
+                    const li = document.createElement('li');
+                    li.textContent = map;
+                    li.onclick = () => {
+                        mapInput.value = map; // Set input value to selected suggestion
+                        mapSuggestions.innerHTML = ''; // Clear suggestions
+                    };
+                    mapSuggestions.appendChild(li);
+                });
+            });
+        });
+
     </script>
 </body>
 </html>
-        
