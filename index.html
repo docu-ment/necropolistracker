@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Necropolis Tracker</title>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
+    <script type="mudule" src="index.obfuscated.js"></script>
+    
+    <style>
+        /* Basic reset for a dark theme */
+        body {
+            background-color: #121212; /* Dark background */
+            color: white; /* Light text */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 50;
+        }
+    
+        h1, h2 {
+            color: #e0e0e0; /* Lighter text for headers */
+        }
+    
 
+
+        .highlight {
+    background-color: yellow; /* Change to any color you like */
+    font-weight: bold;
+}
+
+
+        .container {
+            padding: 10px;
+        }
+    
+        .form-row {
+            margin-bottom: 15px;
+        }
+    
+        .notification-status {
+            margin-left: 10px;
+            font-style: italic;
+            color: #ccc; /* Light gray color for status text */
+        }
+    
+        .voted-map-entry {
+            margin: 10px 0;
+            background-color: #333; /* Dark background for map entries */
+            padding: 10px;
+            border-radius: 5px;
+            width: 50%; /* Reduced width for voted map entries */
+            text-align: center;
+        }
+    
+        
+        .map-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 5px;
+        }
+    
+        .timer {
+            font-weight: bold;
+            margin-left: 10px;
+            color: #ffff00; /* Yellow for the timer, more accessible */
+        }
+    
+        .vote-buttons {
+            display: inline-block;
+            margin-left: 15px;
+        }
+    
+        .vote-count {
+            margin-left: 5px;
+        }
+    
+        #mapSuggestions {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #444; /* Dark border */
+            max-height: 250px;
+            overflow-y: auto;
+            position: absolute; /* Ensure suggestions are positioned correctly */
+            z-index: 2000; /* Make sure suggestions appear above other content */
+            background-color: #222; /* Dark background for suggestions */
+        }
+    
+        #mapSuggestions li {
+            padding: 11px;
+            cursor: pointer;
+            color: white; /* White text for suggestions */
+        }
+    
+        #mapSuggestions li:hover {
+            background-color: #444; /* Dark hover effect */
+        }
+    
+        .voted-maps-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #e0e0e0;
+}
+    
+        label {
+            color: #ccc; /* Light gray color for labels */
+        }
+    
+        button {
+            background-color: #444; /* Dark button background */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        button:hover {
+            background-color: #666; /* Lighter background on hover */
+        }
+    
+        input[type="text"], input[type="number"], input[type="range"] {
+            background-color: #333; /* Dark input background */
+            color: white; /* White text for input */
+            border: 1px solid #555; /* Slightly lighter border */
+            padding: 5px;
+            border-radius: 1px;
+        }
+    
+        input[type="text"]:focus, input[type="number"]:focus, input[type="range"]:focus {
+            border-color: #888; /* Highlight border color when focused */
+        }
+    
+        /* For the notification volume range */
+        #volumeValue {
+            color: #ccc;
+        }
+    
+        .form-row label {
+            margin-right: 0px;
+        }
+    </style>
+    
+    <body>
+        <section>
+            <h1>Necropolis Tracker: Settlers of Kalguur</h1>
+            <h2>Notification Settings</h2>
+            <p>Select mod to be notified about:</p>
+            <form id="notificationForm">
+                <div class="form-row">
+                    <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
+                    <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
+                    <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
+                    <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
+                    <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
+                    <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
+                    <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
+                    <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
+                    <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
+                    <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
+                    <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
+                    <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
+                    <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
+                </div>
+    
+                <div class="form-row">
+                    <label for="upvoteThreshold">Upvotes required for notification:</label>
+                    <input type="number" id="upvoteThreshold" min="0" value="1" step="1">
+                    <label for="volumeControl"> Volume: <span id="volumeValue">50%</span></label>
+                    <input type="range" id="volumeControl" min="0" max="100" value="50" step="10" oninput="updateVolume()">
+                </div>
+    
+                <button type="button" onclick="setNotifications()">Set Notifications</button>
+            <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
+        </form>
+        </section>
+    
+        <section>
+            <h2 class="voted-maps-header">
+                <div>
+                    <span>Voted Maps</span>
+                    <span id="timer" class="timer">1:19</span>
+                </div>
+            </h2>
+    
+            <div id="votedMaps">
+                <ul id="votedMapsList"></ul>
+            </div>
+        </section>
+    
+        <section>
+            <h2>Select Map and Modifiers</h2>
+            <form id="modForm">
+                <p>Select Modifiers:</p>
+                <label><input type="checkbox" name="mod" value="exp"> Exp</label>
+                <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
+                <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
+                <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
+                <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
+                <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
+                <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
+                <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
+                <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
+                <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
+                <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>
+    
+                <div>
+                    <input type="text" id="mapInput" placeholder="Enter map name" />
+                </div>
+                <ul id="mapSuggestions"></ul>
+    
+                <button type="button" onclick="submitVote()">Confirm</button>
+            </form>
+        </section>
+
+      
+        <audio id="notificationSound" src="audio.mp3" preload="auto"></audio>
+
+    <script>
+    </script>
+</body>
+</html>
