@@ -1,49 +1,88 @@
-// Check if the user has already given consent using localStorage
-function getCookieConsent() {
-    return localStorage.getItem('cookieConsent') === 'true';
-}
+// cookies.js
 
-// Show the cookie consent banner if user hasn't consented yet
-function showCookieBanner() {
-    const banner = document.getElementById('cookie-banner');
-    banner.style.display = 'block';
-}
-
-// Hide the cookie consent banner
-function hideCookieBanner() {
-    const banner = document.getElementById('cookie-banner');
-    banner.style.display = 'none';
-}
-
-// Save the user's consent choice to localStorage
-function saveConsent(choice) {
-    localStorage.setItem('cookieConsent', choice);  // 'true' or 'false'
-    hideCookieBanner();
-}
-
-// Set up event listeners for accept and decline buttons
-function setupEventListeners() {
-    const acceptButton = document.getElementById('accept-cookies');
-    const declineButton = document.getElementById('decline-cookies');
-
-    acceptButton.addEventListener('click', () => {
-        saveConsent('true');
-        // Optionally, enable services like analytics if needed
-    });
-
-    declineButton.addEventListener('click', () => {
-        saveConsent('false');
-        // Optionally, disable services like tracking
-    });
-}
-
-// Initialize the cookie consent check on page load
-function initCookieConsent() {
-    if (!getCookieConsent()) {
-        showCookieBanner();
+// Check if cookies preference is already set
+function checkCookies() {
+    const cookiesAccepted = localStorage.getItem('cookiesAccepted');
+    const cookiesType = localStorage.getItem('cookiesType'); // 'all' or 'essential'
+    
+    // If cookies have already been accepted, check if user accepted notifications
+    if (cookiesAccepted) {
+        if (cookiesType === 'all') {
+            // Allow sound volume and notifications
+            setNotificationSound(true);
+        } else if (cookiesType === 'essential') {
+            // Set volume to 0% or limit non-essential functionality
+            setNotificationSound(false);
+        }
+    } else {
+        // Display cookies banner if not accepted yet
+        showCookiesBanner();
     }
-    setupEventListeners();
 }
 
-// Run cookie consent initialization after the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initCookieConsent);
+// Show the cookies banner and prompt user
+function showCookiesBanner() {
+    const banner = document.getElementById('cookies-banner');
+    banner.style.display = 'block';
+
+    document.getElementById('accept-all-cookies').addEventListener('click', function() {
+        acceptCookies('all');
+    });
+    document.getElementById('accept-essential-cookies').addEventListener('click', function() {
+        acceptCookies('essential');
+    });
+}
+
+// Accept cookies and store preference
+function acceptCookies(type) {
+    localStorage.setItem('cookiesAccepted', true);
+    localStorage.setItem('cookiesType', type);
+
+    // Hide the cookies banner
+    const banner = document.getElementById('cookies-banner');
+    banner.style.display = 'none';
+
+    // Set functionality based on the cookie type
+    if (type === 'all') {
+        // Enable sound notifications and volume
+        setNotificationSound(true);
+    } else {
+        // Disable sound notifications or set volume to 0%
+        setNotificationSound(false);
+    }
+
+    // Prompt for notification permission only if all cookies are accepted
+    if (type === 'all') {
+        requestNotificationPermission();
+    }
+}
+
+// Set the notification sound based on the cookie type
+function setNotificationSound(enabled) {
+    const notificationSound = document.getElementById('notification-sound');
+    if (enabled) {
+        notificationSound.volume = 1; // Set to full volume
+    } else {
+        notificationSound.volume = 0; // Set to 0% volume (mute)
+    }
+}
+
+// Request notification permission
+function requestNotificationPermission() {
+    if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Notification permission granted.');
+            } else {
+                console.log('Notification permission denied.');
+            }
+        }).catch(err => {
+            console.log('Notification permission request failed', err);
+        });
+    }
+}
+
+// Call checkCookies on page load to determine if cookies are accepted or need to be prompted
+window.onload = function() {
+    checkCookies();
+};
