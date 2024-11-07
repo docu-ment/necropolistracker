@@ -24,14 +24,11 @@
             color: #e0e0e0; /* Lighter text for headers */
         }
     
-
-
         .highlight {
-    background-color: yellow; /* Change to any color you like */
-    font-weight: bold;
-}
-
-
+            background-color: yellow; /* Change to any color you like */
+            font-weight: bold;
+        }
+    
         .container {
             padding: 10px;
         }
@@ -55,7 +52,6 @@
             text-align: center;
         }
     
-           
         .timer {
             font-weight: bold;
             margin-left: 10px;
@@ -94,11 +90,11 @@
         }
     
         .voted-maps-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #e0e0e0;
-}
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #e0e0e0;
+        }
     
         label {
             color: #ccc; /* Light gray color for labels */
@@ -137,57 +133,74 @@
         .form-row label {
             margin-right: 0px;
         }
-
+    
         .cookie-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #333;
-    color: white;
-    padding: 20px;
-    text-align: center;
-    z-index: 1000;
-}
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #333;
+            color: white;
+            padding: 50px;
+            text-align: center;
+            z-index: 1000;
+        }
+    
+        .cookie-banner button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+    
+        .cookie-banner button:hover {
+            background-color: #45a049;
+        }
+    
+        .privacy-link {
+            color: #4CAF50;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+    
+        .privacy-link:hover {
+            color: #45a049;
+        }
+    
+        /* Make the map name input field bigger */
+        #mapInput {
+            width: 100%;  /* Make the input take the full width */
+            height: 50px; /* Increase height */
+            font-size: 18px; /* Larger text for better readability */
+            padding: 10px; /* More padding for a larger feel */
+            border-radius: 5px; /* Rounded corners */
+        }
+    
+        /* Position the 'Confirm' button at the bottom of the form */
+        #modForm {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            max-width: 51%; /* Set form width to 50% of parent container */
+            height: 0px; /* Adjust form height */
+        }
+  
 
-.cookie-banner button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    cursor: pointer;
-}
-
-.cookie-banner button:hover {
-    background-color: #45a049;
-}
-
-.privacy-link {
-    color: #4CAF50;
-    text-decoration: underline;
-    margin-left: 10px;
-}
-
-.privacy-link:hover {
-    color: #45a049;
-}
-
-
-
-
+    
+        /* Ensure the confirm button stays at the bottom */
+        button[type="button"] {
+            margin-top: auto;  /* Push button to the bottom */
+        }
     </style>
+    
     <body>
         <section>
-
             <!-- Cookie banner -->
-<div id="cookies-banner" style="display:none;">
-    <p>We use cookies to improve your experience. <button id="accept-cookies">Accept Cookies</button></p>
-</div>
-
-            
-
-
-            
+            <div id="cookies-banner" style="display:none;">
+                <p>We use cookies to improve your experience. <button id="accept-cookies">Accept Cookies</button></p>
+            </div>
+    
             <h1>Necropolis Tracker: Settlers of Kalguur</h1>
             <h2>Notification Settings</h2>
             <p>Select mod to be notified about:</p>
@@ -195,17 +208,33 @@
                 <div class="form-row">
                     <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
                     <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
+                    <label><input type="checkbox" value="seer" id="seerCheckbox"> Seer</label>
                     <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
                     <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
                     <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
                     <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
                     <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
+                    <label><input type="checkbox" value="maps" id="mapsCheckbox"> Maps</label>
+                    <label><input type="checkbox" value="scarabs" id="scarabsCheckbox"> Scarabs</label>
                     <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
                     <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
                     <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
                     <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
                     <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
                     <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
+                    <label><input type="checkbox" value="unmaking" id="unmakingCheckbox"> Unmaking</label>
+                    <label><input type="checkbox" value="horizon" id="horizonCheckbox"> Horizon</label>
+                    <label><input type="checkbox" value="gemcutter" id="gemcutterCheckbox"> Gemcutter</label>
+                    <label><input type="checkbox" value="glassblower" id="glassblowerCheckbox"> Glassblower</label>
+                    <label><input type="checkbox" value="regret" id="regretCheckbox"> Regret</label>
+                    <label><input type="checkbox" value="instilling" id="instillingCheckbox"> Instilling</label>
+                    <label><input type="checkbox" value="enkindling" id="enkindlingCheckbox"> Enkindling</label>
+                    <label><input type="checkbox" value="vaal orbs" id="vaalOrbsCheckbox"> Vaal Orbs</label>
+                    <label><input type="checkbox" value="blessed orbs" id="blessedOrbsCheckbox"> Blessed Orbs</label>
+                    <label><input type="checkbox" value="chisel" id="chiselCheckbox"> Chisel</label>
+                    <label><input type="checkbox" value="accomp map boss" id="accompMapBossCheckbox"> Accomp Map Boss</label>
+                    <label><input type="checkbox" value="accomp rogue" id="accompRogueCheckbox"> Accomp Rogue</label>
+                    <label><input type="checkbox" value="corrupting tempest" id="corruptingTempestCheckbox"> Corrupting Tempest</label>
                 </div>
     
                 <div class="form-row">
@@ -218,10 +247,10 @@
                     <input type="checkbox" id="enable-notifications" />
                     Enable Notifications
                 </label>
-
+    
                 <button type="button" onclick="setNotifications()">Set Notifications</button>
-            <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
-        </form>
+                <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
+            </form>
         </section>
     
         <section>
@@ -239,28 +268,61 @@
     
         <section>
             <h2>Select Map and Modifiers</h2>
-            <form id="modForm">
+     
+                <div class="form-row">
                 <p>Select Modifiers:</p>
                 <label><input type="checkbox" name="mod" value="exp"> Exp</label>
                 <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
+                <label><input type="checkbox" name="mod" value="seer"> Seer</label>
                 <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
                 <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
                 <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
                 <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
                 <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
+                <label><input type="checkbox" name="mod" value="maps"> Maps</label>
+                <label><input type="checkbox" name="mod" value="scarabs"> Scarabs</label>
                 <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
                 <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
                 <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
                 <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
                 <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
-                <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>
-    
+                <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>             
+                <label><input type="checkbox" name="mod" value="unmaking"> Unmaking</label>
+                <label><input type="checkbox" name="mod" value="horizon"> Horizon</label>
+                <label><input type="checkbox" name="mod" value="gemcutter"> Gemcutter</label>
+                <label><input type="checkbox" name="mod" value="glassblower"> Glassblower</label>
+                <label><input type="checkbox" name="mod" value="regret"> Regret</label>
+                <label><input type="checkbox" name="mod" value="instilling"> Instilling</label>
+                <label><input type="checkbox" name="mod" value="enkindling"> Enkindling</label>
+                <label><input type="checkbox" name="mod" value="vaal orbs"> Vaal Orbs</label>
+                <label><input type="checkbox" name="mod" value="blessed orbs"> Blessed Orbs</label>
+                <label><input type="checkbox" name="mod" value="chisel"> Chisel</label>
+                <label><input type="checkbox" name="mod" value="accomp map boss"> Accomp Map Boss</label>
+                <label><input type="checkbox" name="mod" value="accomp rogue"> Accomp Rogue</label>
+                <label><input type="checkbox" name="mod" value="corrupting tempest"> Corrupting Tempest</label>
+                <form id="modForm">
                 <div>
                     <input type="text" id="mapInput" placeholder="Enter map name" />
                 </div>
                 <ul id="mapSuggestions"></ul>
-    
+        
                 <button type="button" onclick="submitVote()">Confirm</button>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <h3>Watch our tutorial!</h3>
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/oY3d506HsxE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+
+
+                <footer>
+                    <div style="text-align: center; padding: 20px;">
+                        <p>&copy; 2024 necropolistracker. All rights reserved.</p>
+                        <p>
+                            <a href="/impressum.html" target="_blank">Impressum</a> | 
+                            <a href="/cookie_policy.html" target="_blank">Cookie Policy</a>
+                        </p>
+                    </div>
+                </footer>
             </form>
         </section>
 
@@ -448,10 +510,14 @@ function updateVote(mapId, modifiers, voteType) {
     const upvotes = mapVotes?.votes || 0;
     const selectedModifiers = [...document.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
 
-    // Check if the map matches the selected modifiers and upvote threshold
-    const modifierMatch = selectedModifiers.every(mod => mapVotes.modifiers.includes(mod));
+    // Check if at least one or all selected modifiers are in the map's modifiers
+    const modifierMatchAny = selectedModifiers.some(mod => mapVotes.modifiers.includes(mod)); 
+    const modifierMatchAll = selectedModifiers.every(mod => mapVotes.modifiers.includes(mod));
 
-    if (upvotes >= notificationSettings.upvoteThreshold && modifierMatch) {
+    // Combine the conditions
+    const modifierMatchCombined = modifierMatchAny || modifierMatchAll;
+
+    if (upvotes >= notificationSettings.upvoteThreshold && modifierMatchCombined) {
         // Trigger notification sound
         const sound = document.getElementById('notificationSound');
         sound.volume = notificationSettings.volume / 100;  // Adjust volume
