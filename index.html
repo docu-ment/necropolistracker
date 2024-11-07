@@ -525,7 +525,7 @@ function updateVote(mapId, modifiers, voteType) {
         }
 
         // Check if the map should be deleted due to too many downvotes
-        if (currentVotes.downvotes >= 4) {  // You can adjust the threshold (e.g., 3 downvotes)
+        if (currentVotes.downvotes >= 20) {  // You can adjust the threshold (e.g., 3 downvotes)
             deleteMap(mapId); // Call the delete function to remove the map
         } else {
             // Update the database with the new votes count
