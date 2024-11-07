@@ -18,6 +18,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 50;
+            margin-left: 50px;
         }
     
         h1, h2 {
@@ -135,28 +136,32 @@
         }
     
         .cookie-banner {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #333;
-            color: white;
-            padding: 50px;
-            text-align: center;
-            z-index: 1000;
-        }
-    
-        .cookie-banner button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-        }
-    
-        .cookie-banner button:hover {
-            background-color: #45a049;
-        }
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(51, 51, 51, 0.9); /* Semi-transparent dark overlay */
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        z-index: 1000; /* Ensure it overlays all content */
+        pointer-events: auto;
+    }
+
+    .cookie-banner button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .cookie-banner button:hover {
+        background-color: #45a049;
+    }
     
         .privacy-link {
             color: #4CAF50;
@@ -321,7 +326,9 @@
 
                 <div style="text-align: center; margin-top: 30px;">
                     <h3>Watch our tutorial!</h3>
-                    <iframe width="560" height="315" src="https://www.youtube.com/embed/oY3d506HsxE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                 
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/oY3d506HsxE" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
                 </div>
 
 
@@ -364,7 +371,7 @@
         let votedMaps = {};
         let userVotes = {};
         let notificationSettings = {
-            mods: [], // Array of selected mods
+            mods: [], // Array of selected mods PROPERTY
             upvoteThreshold: 1,
             volume: 50
         };
@@ -394,7 +401,38 @@
             "Pit Map", "Alleyways Map", "Terrace Map", "Underground River Map", "Academy Map", "Orchard Map",
             "Lighthouse Map", "Pit of the Chimera Map", "Crystal Ore Map", "Sepulchre Map", "Vaal Temple Map",
             "Lair of the Hydra Map", "Maze of the Minotaur Map", "Forge of the Phoenix Map", "Abomination Map",
-            "Citadel Map", "Fortress Map", "Ziggurat Map", "Sanctuary Map"
+            "Citadel Map", "Fortress Map", "Ziggurat Map", "Sanctuary Map", "Act 1 - The Coast", "Act 1 - The Tidal Island", 
+            "Act 1 - The Mudflats", "Act 1 - The Fetid Pool", "Act 1 - The Ledge", "Act 1 - The Submerged Passage", 
+            "Act 1 - The Flooded Depths", "Act 1 - The Climb", "Act 1 - The Prison", "Act 1 - Prisoner's Gate", "Act 1 - The Ship Graveyard", 
+            "Act 1 - The Ship Graveyard Cave", "Act 1 - Merveil's Cavern", 
+            "Act 2 - The Southern Forest", "Act 2 - The Riverways", "Act 2 - The Western Forest", "Act 2 - The Weaver's Chambers", "Act 2 - The Wetlands", 
+            "Act 2 - The Vaal Ruins", "Act 2 - The Northern Forest", , "Act 2 - The Dread Thicket",, "Act 2 - The Caverns", "Act 2 - The Old Field", "Act 2 - The Den",
+            "Act 2 - The Crossroads", "Act 2 - The Chamber of Sins", "Act 2 - The Broken Bridge", "Act 2 - The Fellshrine Ruins", "Act 2 - The Crypt", , "Act 2 - Ancient Pyramid",
+            "Act 3 - The City of Sarn", "Act 3 - The Slums", "Act 3 - The Crematorium", "Act 3 - The Sewers", "Act 3 - The Marketplace", "Act 3 - The Catacombs", 
+            "Act 3 - The Battlefront", "Act 3 - The Solaris Temple Level 1", "Act 3 - The Solaris Temple Level 2", "Act 3 - The Ebony Barracks", 
+            "Act 3 - The Lunaris Temple Level 1", "Act 3 - The Docks", "Act 3 - The Lunaris Temple Level 2", "Act 3 - The Imperial Gardens", 
+            "Act 3 - The Library", "Act 3 - The Archives", "Act 3 - The Sceptre of God", "Act 3 - The Upper Sceptre of God", 
+            "Act 4 - The Aqueduct", "Act 4 - The Dried Lake", "Act 4 - The Mines Level 1", "Act 4 - The Mines Level 2", "Act 4 - The Crystal Veins", 
+            "Act 4 - Kaom's Dream", "Act 4 - Daresso's Dream", "Act 4 - Kaom's Stronghold", "Act 4 - The Grand Arena", "Act 4 - The Belly of the Beast Level 1",
+            "Act 4 - The Belly of the Beast Level 2", "Act 4 - The Harvest", "Act 4 - The Ascent", 
+            "Act 5 - The Slave Pens", "Act 5 - The Control Blocks", "Act 5 - Oriath Square", "Act 5 - The Templar Courts", "Act 5 - The Chamber of Innocence", 
+            "Act 5 - The Ruined Square", "Act 5 - The Torched Courts", "Act 5 - The Ossuary", "Act 5 - The Reliquary", "Act 5 - The Cathedral Rooftop", 
+            "Act 6 - The Twilight Strand", "Act 6 - The Coast", "Act 6 - The Tidal Island", "Act 6 - The Mud Flats", "Act 6 - The Karui Fortress", 
+            "Act 6 - The Ridge", "Act 6 - The Lower Prison", "Act 6 - Shavronne's Tower", "Act 6 - Prisoner's Gate", "Act 6 - The Riverways", "Act 6 - The Wetlands", 
+            "Act 6 - The Western Forest", "Act 6 - The Southern Forest", "Act 6 - The Cavern of Anger", "Act 6 - The Beacon", "Act 6 - The Brine King's Reef", 
+            "Act 7 - The Broken Bridge", "Act 7 - The Crossroads", "Act 7 - The Fellshrine Ruins", "Act 7 - The Crypt", "Act 7 - The Chamber of Sins Level 1", 
+            "Act 7 - The Chamber of Sins Level 2", "Act 7 - Maligaro's Sanctum", "Act 7 - The Den", "Act 7 - The Ashen Fields", "Act 7 - The Northern Forest", 
+            "Act 7 - The Dread Thicket", "Act 7 - The Causeway", "Act 7 - The Vaal City", "Act 7 - The Temple of Decay Level 1", "Act 7 - The Temple of Decay Level 2", 
+            "Act 8 - The Sarn Ramparts", "Act 8 - The Toxic Conduits", "Act 8 - Doedre's Cesspool", "Act 8 - The Grand Promenade", "Act 8 - The Bath House", 
+            "Act 8 - The Quay", "Act 8 - The Grain Gate", "Act 8 - The Imperial Fields", "Act 8 - The Solaris Concourse", "Act 8 - The High Gardens", 
+            "Act 8 - The Lunaris Concourse", "Act 8 - The Solaris Temple Level 1", "Act 8 - The Solaris Temple Level 2", "Act 8 - The Lunaris Temple Level 1", 
+            "Act 8 - The Lunaris Temple Level 2", "Act 8 - The Harbour Bridge", 
+            "Act 9 - The Blood Aqueduct", "Act 9 - The Descent", "Act 9 - The Vastiri Desert", "Act 9 - The Oasis", "Act 9 - The Foothills", 
+            "Act 9 - The Boiling Lake", "Act 9 - The Tunnel", "Act 9 - The Belly of the Beast", "Act 9 - The Quarry", "Act 9 - The Refinery", "Act 9 - The Rotting Core", 
+            "Act 10 - The Cathedral Rooftop", "Act 10 - The Ravaged Square", "Act 10 - The Torched Courts", "Act 10 - The Desecrated Chambers", 
+            "Act 10 - The Canals", "Act 10 - The Control Blocks", "Act 10 - The Feeding Trough", "Act 10 - The Reliquary", "Act 10 - The Ossuary"
+
+        
         ];
         
         function loadVotesFromFirebase() {
@@ -416,7 +454,7 @@
             console.error('Error uploading data:', error);
         } else {
             console.log('Vote confirmed for', mapInput);
-            displayVotedMaps(); // Refresh the list after confirming
+            displayVotedMaps(); // Refresh the list after confirming OF
         }
     });
 }
@@ -503,7 +541,7 @@ function updateVote(mapId, modifiers, voteType) {
     });
 }
 
- // Function to delete a map from the database (if too many downvotes)
+ // Function to delete a map from the database (if too many downvotes) FRANKLY
  function deleteMap(mapId) {
             const mapRef = ref(database, 'votes/' + mapId);
             set(mapRef, null).then(() => {
@@ -561,7 +599,7 @@ function updateTabTitle(mapName, upvotes) {
     }
     window.voteCounters[mapName]++;
 
-    // Format the tab title with the vote count in parentheses
+    // Format the tab title with the vote count in parentheses SPEAKING
     const voteCount = window.voteCounters[mapName];
     document.title = `(${voteCount}) ${mapName} - Map Tracker`;
 
@@ -668,7 +706,7 @@ function setNotifications() {
         alert('Failed to submit vote. Please try again later.');
     });
 
-    // Uncheck all the checkboxes after submission
+    // Uncheck all the checkboxes after submission GAMES
     document.querySelectorAll('input[name="mod"]:checked').forEach(checkbox => {
         checkbox.checked = false;
     });
@@ -750,7 +788,7 @@ function setNotifications() {
         };
 
 
-// Check if notifications are already granted or denied
+// Check if notifications are already granted or denied DOCU
 function checkNotificationPermission() {
     if (Notification.permission === 'granted') {
         // Notifications are already enabled
@@ -814,7 +852,7 @@ function showBackgroundNotification() {
                     const li = document.createElement('li');
                     li.textContent = map;
                     li.onclick = () => {
-                        mapInput.value = map; // Set input value to selected suggestion
+                        mapInput.value = map; // Set input value to selected suggestion MENT
                         mapSuggestions.innerHTML = ''; // Clear suggestions
                     };
                     mapSuggestions.appendChild(li);
