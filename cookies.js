@@ -1,30 +1,19 @@
-// Function to set cookies
+// Function to set cookies with Secure and SameSite attributes
 function setCookie(name, value, days) {
-    const d = new Date();
-    let expires = '';
-    if (days) {
-        d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "expires=" + d.toUTCString();
-    }
-    const isSecure = window.location.protocol === 'https:';
-    let cookieString = name + "=" + value + ";" + expires + ";path=/;";
-
-    if (isSecure) {
-        cookieString += "SameSite=None; Secure";
-    } else {
-        cookieString += "SameSite=Lax";
-    }
-
-    document.cookie = cookieString;
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value || ""}; expires=${expires.toUTCString()}; path=/; SameSite=None; Secure`;
 }
+
 
 // Function to get cookies by name
 function getCookie(name) {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
-        let c = ca[i].trim(); 
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length); 
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
 }
@@ -94,7 +83,6 @@ function acceptCookies() {
     location.reload(); // Force a reload to ensure the page reflects the new cookies
 }
 
-
 // Function to request browser notification permission if not yet granted
 function requestNotificationPermission() {
     if ('Notification' in window) {
@@ -112,47 +100,50 @@ function requestNotificationPermission() {
 
 // Function to load saved notification settings (mod preferences, vote threshold, etc.)
 function loadNotificationSettings(settings) {
-    if (settings && settings.mods) {
-        // Set checkbox values based on the saved mods
-        settings.mods.forEach(mod => {
-            const checkbox = document.querySelector(`#${mod.replace(/\s+/g, '')}Checkbox`);
-            if (checkbox) {
-                checkbox.checked = true;
-            }
-        });
+    // Extract active mods (those checked in the settings)
+    const activeMods = settings.items || [];
 
-        // Set upvote threshold and volume based on the saved values
-        document.getElementById('upvoteThreshold').value = settings.upvoteThreshold || 1;
-        document.getElementById('volumeControl').value = settings.volume || 50;
+    // Display the active mods in the notification status
+    let notificationText = "Currently no notification saved.";
 
-        // Update the notification status text to reflect the saved settings
-        document.getElementById('notificationStatus').textContent = `Notifications set for mods: ${settings.mods.join(', ')} with threshold: ${settings.upvoteThreshold} at volume: ${settings.volume}%`;
-    } else {
-        document.getElementById('notificationStatus').textContent = "Currently no notification saved.";
+    if (activeMods.length > 0 || settings.voteThreshold || settings.volume !== 50) {
+        notificationText = "Active filters: " + activeMods.join(", ");
+        notificationText += (activeMods.length > 0 && (settings.voteThreshold || settings.volume !== 50)) ? ", " : "";
+        notificationText += settings.voteThreshold ? "Upvotes required: " + settings.voteThreshold : "";
+        notificationText += (settings.volume !== 50 && settings.voteThreshold) ? ", Volume: " + settings.volume + "%" : "";
+        notificationText += (settings.volume !== 50 && !settings.voteThreshold) ? "Volume: " + settings.volume + "%" : "";
     }
+
+    // Update the notification status text
+    document.getElementById("notificationStatus").textContent = notificationText;
 }
 
 // Function to set notification settings
 function setNotifications() {
-    // Get the selected mods from the checkboxes
-    const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
-    
-    // Get the upvote threshold and volume settings
-    const upvoteThreshold = document.getElementById('upvoteThreshold').value;
-    const volume = document.getElementById('volumeControl').value;
-    
-    // Store the settings in notificationSettings cookie
-    const notificationSettings = {
-        mods: selectedMods,
-        upvoteThreshold: upvoteThreshold,
-        volume: volume
-    };
-    
-    // Set the cookie for 365 days
-    setCookie('notificationSettings', JSON.stringify(notificationSettings), 365);
+    const selectedMods = [];
+    const mods = {};
 
-    // Display notification settings status
-    document.getElementById('notificationStatus').textContent = `Notifications set for mods: ${selectedMods.join(', ')} with threshold: ${upvoteThreshold} at volume: ${volume}%`;
+    // Loop through all checkbox elements to get the selected ones
+    document.querySelectorAll('input[type="checkbox"]:checked').forEach((checkbox) => {
+        selectedMods.push(checkbox.value);
+        mods[checkbox.value] = true;  // Mark this mod as selected
+    });
+
+    // Collect additional settings like vote threshold and volume
+    const voteThreshold = document.getElementById('upvoteThreshold').value;
+    const volume = document.getElementById('volumeControl').value;
+
+    // Store all settings in the cookie
+    const settings = {
+        items: selectedMods,          // Stores active items
+        voteThreshold: voteThreshold,  // Store the vote threshold value
+        volume: volume       // Store volume level
+    };
+
+    setCookie("notificationSettings", JSON.stringify(settings), 365); // Set cookie for 365 days
+
+    // Update the notification status text after setting the notifications
+    loadNotificationSettings(settings);
 }
 
 // Function to check and trigger notifications for a map
@@ -186,11 +177,15 @@ window.onload = function() {
     checkCookies();
 };
 
+
 // Event listener for the "Accept Cookies" button
 document.addEventListener('DOMContentLoaded', function() {
     const acceptCookiesButton = document.getElementById('accept-cookies');
+    const cookieBanner = document.getElementById("cookies-banner");
 
-    // Check if cookies are accepted when the page is loaded
+    
+    
+    // Check if cookies are already accepted when the page is loaded
     checkCookies();
 
     if (acceptCookiesButton) {
