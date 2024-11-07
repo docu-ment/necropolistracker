@@ -349,36 +349,40 @@
 }
 
 function displayVotedMaps() {
-        const votedMapsList = document.getElementById('votedMapsList');
-        votedMapsList.innerHTML = ''; // Clear existing list
+    const votedMapsList = document.getElementById('votedMapsList');
+    votedMapsList.innerHTML = ''; // Clear existing list
 
-        for (const mapName in votedMaps) {
-            if (votedMaps.hasOwnProperty(mapName)) {
-                const mapData = votedMaps[mapName];
-                const modifiersList = mapData.modifiers.join(', '); // Join modifiers into a string
-                const votesCount = mapData.votes || 0; // Get the vote count
+    for (const mapName in votedMaps) {
+        if (votedMaps.hasOwnProperty(mapName)) {
+            const mapData = votedMaps[mapName];
+            const modifiersList = mapData.modifiers.join(', '); // Join modifiers into a string
+            const votesCount = mapData.votes || 0; // Get the vote count
 
-                // Create a list item with the desired format
-                const listItem = document.createElement('li');
-                listItem.className = 'voted-map-entry'; // Add a class for styling
-                listItem.textContent = `${mapName} | Modifiers: [${modifiersList}] | Votes: ${votesCount}  `;
+            // Extract the base map name (before any modifiers)
+            const baseMapName = mapName.split('_')[0]; // Get only the part before the first underscore
 
-                // Create upvote and downvote buttons
-                const upvoteButton = document.createElement('button');
-                upvoteButton.textContent = 'Upvote ';
-                upvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, 1); // Upvote logic
+            // Create a list item with the desired format
+            const listItem = document.createElement('li');
+            listItem.className = 'voted-map-entry'; // Add a class for styling
+            listItem.textContent = `${baseMapName} | Modifiers: [${modifiersList}] | Votes: ${votesCount}`;
 
-                const downvoteButton = document.createElement('button');
-                downvoteButton.textContent =  ' Downvote';
-                downvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, -1); // Downvote logic
+            // Create upvote and downvote buttons
+            const upvoteButton = document.createElement('button');
+            upvoteButton.textContent = 'Upvote ';
+            upvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, 1); // Upvote logic
 
-                // Append buttons to list item
-                listItem.appendChild(upvoteButton);
-                listItem.appendChild(downvoteButton);
-                votedMapsList.appendChild(listItem);
-            }
+            const downvoteButton = document.createElement('button');
+            downvoteButton.textContent =  ' Downvote';
+            downvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, -1); // Downvote logic
+
+            // Append buttons to list item
+            listItem.appendChild(upvoteButton);
+            listItem.appendChild(downvoteButton);
+            votedMapsList.appendChild(listItem);
         }
     }
+}
+
 
 // Function to update the vote count (called when a user upvotes/downvotes)
 function updateVote(mapId, modifiers, voteType) {
@@ -453,10 +457,22 @@ function updateVote(mapId, modifiers, voteType) {
         sound.volume = notificationSettings.volume / 100;  // Adjust volume
         sound.play();
 
+        // Format modifiers into a nice, readable string (removing underscores between them)
+        const formattedModifiers = mapVotes.modifiers.join(', ').replace(/_/g, ' ');
+
+        // Use the clean map name for the notification
+        const baseMapName = mapVotes.mapName;  // Now this is the clean map name from the database
+        
+        // Display the formatted notification
+        alert(`Notification! ${baseMapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
+        
         // Update the browser tab title with the number of votes for this map
-        updateTabTitle(mapName, upvotes);
+        updateTabTitle(baseMapName, upvotes);
     }
 }
+
+
+
 
 function updateTabTitle(mapName, upvotes) {
     // Retrieve or initialize a counter for this map
@@ -481,7 +497,7 @@ function updateTabTitle(mapName, upvotes) {
 }
 
 
-        function setNotifications() {
+function setNotifications() {
     // Get the selected mods from the checkboxes
     const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
     
@@ -510,7 +526,11 @@ function updateTabTitle(mapName, upvotes) {
             const sound = document.getElementById('notificationSound');
             sound.volume = volume / 100;  // Adjust the volume
             sound.play();
-            alert(`Notification! ${map} has reached ${upvotes} upvotes with modifiers: ${mapModifiers.join(', ')}`);
+            
+            // Format the modifiers for a clean display
+            const formattedModifiers = mapModifiers.join(', ').replace(/_/g, ' ');
+
+            alert(`Notification! ${map} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
         }
     }
 }
@@ -548,11 +568,16 @@ function updateTabTitle(mapName, upvotes) {
         return; // Prevent further voting on the same map
     }
 
-    // This sets the vote and updates the database
-    const votesRef = ref(database, 'votes/' + mapInput);
+    // Create a unique key for the vote
+    const modifiersKey = modifiers.sort().join('_');
+    const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
+
+    const votesRef = ref(database, 'votes/' + uniqueVoteKey);
+
+    // Always set the vote count to 1 for this new submission
     set(votesRef, {
         modifiers: modifiers,
-        votes: (votedMaps[mapInput]?.votes || 0) + 1,
+        votes: 1, // Set count to 1 for new submissions
         timestamp: serverTimestamp()
     })
     .then(() => {
@@ -566,10 +591,16 @@ function updateTabTitle(mapName, upvotes) {
         alert('Failed to submit vote. Please try again later.');
     });
 
-    document.getElementById('mapInput').value = '';
+    // Uncheck all the checkboxes after submission
+    document.querySelectorAll('input[name="mod"]:checked').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
+    document.getElementById('mapInput').value = '';  // Clear the map input
     document.getElementById('mapSuggestions').innerHTML = ''; // Clear suggestions after vote
     displayVotedMaps();
 }
+
 
         function searchMap() {
             const input = document.getElementById('mapInput').value.toLowerCase();
