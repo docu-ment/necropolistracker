@@ -9,7 +9,6 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
     <script src="cookies.js" defer></script>
-    <script src=index.obfuscated.js></script>
     
     <style>
         /* Basic reset for a dark theme */
@@ -370,6 +369,7 @@
         const database = getDatabase();
         const db = getFirestore(app);
         let votedMaps = {};
+       
         let userVotes = {};
         let notificationSettings = {
             mods: [], // Array of selected mods PROPERTY
@@ -527,15 +527,16 @@ function updateVote(mapId, modifiers, voteType) {
         } else {
             // Update the database with the new votes count
             set(votesRef, currentVotes)
-                .then(() => {
-                    console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
-                    checkNotifications(mapId); 
-                    userVotes[mapId] = voteType; // Mark this map as voted
-                    loadVotesFromFirebase(); // Refresh the display
-                })
-                .catch((error) => {
-                    console.error("Error updating votes:", error);
-                });
+    .then(() => {
+        console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
+        checkNotifications(mapId); // Pass updated map ID here
+        userVotes[mapId] = voteType; 
+        loadVotesFromFirebase(); 
+    })
+    .catch((error) => {
+        console.error("Error updating votes:", error);
+    });
+
         }
     }).catch((error) => {
         console.error("Error reading votes:", error);
@@ -554,29 +555,37 @@ function updateVote(mapId, modifiers, voteType) {
         }
 
 
+        const notifiedMaps = {};
 
         function checkNotifications(mapName) {
     const mapVotes = votedMaps[mapName];
     const upvotes = mapVotes?.votes || 0;
-    const selectedModifiers = [...document.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+    const selectedModifiers = notificationSettings.mods;
 
-    const modifierMatchAny = selectedModifiers.some(mod => mapVotes.modifiers.includes(mod)); 
-    const modifierMatchAll = selectedModifiers.every(mod => mapVotes.modifiers.includes(mod));
-    const modifierMatchCombined = modifierMatchAny || modifierMatchAll;
+    // Check if any of the selected modifiers match the updated map's modifiers
+    const modifierMatch = selectedModifiers.some(mod => mapVotes.modifiers.includes(mod));
 
-    if (upvotes >= notificationSettings.upvoteThreshold && modifierMatchCombined) {
-        // Trigger the notification sound and alert
+    // Only notify if upvote threshold is met, there is a modifier match, and notification hasn't been triggered for this map
+    if (upvotes >= notificationSettings.upvoteThreshold && modifierMatch && !notifiedMaps[mapName]) {
+        // Mark this map as notified to prevent duplicate notifications
+        notifiedMaps[mapName] = true;
+
+        // Trigger notification sound and alert
         const sound = document.getElementById('notificationSound');
         sound.volume = notificationSettings.volume / 100; 
         sound.play();
 
         const formattedModifiers = mapVotes.modifiers.join(', ').replace(/_/g, ' ');
-        alert(`Notification! ${mapVotes.mapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
+        alert(`Notification! ${mapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
 
-        updateTabTitle(mapVotes.mapName, upvotes); // Update tab title
+        updateTabTitle(mapName, upvotes); // Update tab title
+    }
+
+    // Reset notified status if upvotes drop below threshold
+    if (upvotes < notificationSettings.upvoteThreshold) {
+        notifiedMaps[mapName] = false;
     }
 }
-
 
 
 
@@ -604,42 +613,20 @@ function updateTabTitle(mapName, upvotes) {
 
 
 function setNotifications() {
-    // Get the selected mods from the checkboxes
+    // Get selected mods and settings from the user input
     const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
-    
-    // Get the upvote threshold and volume settings
     const upvoteThreshold = document.getElementById('upvoteThreshold').value;
     const volume = document.getElementById('volumeControl').value;
-    
-    // Store the settings in notificationSettings
+
+    // Update notification settings
     notificationSettings.mods = selectedMods;
     notificationSettings.upvoteThreshold = upvoteThreshold;
     notificationSettings.volume = volume;
-    
-    // Display notification settings status
-    notificationStatus.textContent = `Notifications set for mods: ${selectedMods.join(', ')} with threshold: ${upvoteThreshold} at volume: ${volume}%`;
-    
-    // Check existing voted maps to see if any match the notification criteria
-    for (const map in votedMaps) {
-        const mapVotes = votedMaps[map];
-        const upvotes = mapVotes?.votes || 0;
-        const mapModifiers = mapVotes?.modifiers || [];
-        
-        // Check if the map meets the selected modifiers and upvote threshold
-        const modifierMatch = selectedMods.every(mod => mapModifiers.includes(mod));
-        if (upvotes >= upvoteThreshold && modifierMatch) {
-            // Trigger the notification
-            const sound = document.getElementById('notificationSound');
-            sound.volume = volume / 100;  // Adjust the volume
-            sound.play();
-            
-            // Format the modifiers for a clean display
-            const formattedModifiers = mapModifiers.join(', ').replace(/_/g, ' ');
 
-            alert(`Notification! ${map} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
-        }
-    }
+    // Display notification status
+    notificationStatus.textContent = `Notifications set for mods: ${selectedMods.join(', ')} with threshold: ${upvoteThreshold} at volume: ${volume}%`;
 }
+
 
 
 
