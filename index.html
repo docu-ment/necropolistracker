@@ -559,30 +559,20 @@ function updateVote(mapId, modifiers, voteType) {
     const upvotes = mapVotes?.votes || 0;
     const selectedModifiers = [...document.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
 
-    // Check if at least one or all selected modifiers are in the map's modifiers
     const modifierMatchAny = selectedModifiers.some(mod => mapVotes.modifiers.includes(mod)); 
     const modifierMatchAll = selectedModifiers.every(mod => mapVotes.modifiers.includes(mod));
-
-    // Combine the conditions
     const modifierMatchCombined = modifierMatchAny || modifierMatchAll;
 
     if (upvotes >= notificationSettings.upvoteThreshold && modifierMatchCombined) {
-        // Trigger notification sound
+        // Trigger the notification sound and alert
         const sound = document.getElementById('notificationSound');
-        sound.volume = notificationSettings.volume / 100;  // Adjust volume
+        sound.volume = notificationSettings.volume / 100; 
         sound.play();
 
-        // Format modifiers into a nice, readable string (removing underscores between them)
         const formattedModifiers = mapVotes.modifiers.join(', ').replace(/_/g, ' ');
+        alert(`Notification! ${mapVotes.mapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
 
-        // Use the clean map name for the notification
-        const baseMapName = mapVotes.mapName;  // Now this is the clean map name from the database
-        
-        // Display the formatted notification
-        alert(`Notification! ${baseMapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
-        
-        // Update the browser tab title with the number of votes for this map
-        updateTabTitle(baseMapName, upvotes);
+        updateTabTitle(mapVotes.mapName, upvotes); // Update tab title
     }
 }
 
@@ -649,6 +639,7 @@ function setNotifications() {
         }
     }
 }
+
 
 
 
@@ -780,12 +771,26 @@ function setNotifications() {
             set(votesRef, {}); // Reset all votes
             alert("All votes have been reset.");
         }
+        
 
-        // Load existing votes from Firebase on page load
         window.onload = function() {
-            loadVotesFromFirebase();
-            startTimer();
-        };
+    loadVotesFromFirebase();  // Initial vote load
+    startTimer();             // Timer for vote reset
+    checkNotificationPermission(); // Check if notifications are enabled
+
+    // Add real-time listener for changes in votes
+    const votesRef = ref(database, 'votes');
+    onValue(votesRef, (snapshot) => {
+        votedMaps = snapshot.val() || {}; // Update local voted maps
+
+        // Check each map to see if it meets the notification criteria
+        for (const mapName in votedMaps) {
+            checkNotifications(mapName); // Check notifications for each updated map
+        }
+        
+        displayVotedMaps(); // Update the displayed list
+    });
+};
 
 
 // Check if notifications are already granted or denied DOCU
