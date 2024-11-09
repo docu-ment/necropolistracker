@@ -210,7 +210,7 @@
             </div>
     
             <h1>Necropolis Tracker: Settlers of Kalguur</h1>
-            <h2>Notification Settings      - Currently over capacity, might add more budget later to expand to 20k users</h2>
+            <h2>Notification Settings</h2>
             <p>Select mod to be notified about:</p>
             <form id="notificationForm">
                 <div class="form-row">
@@ -250,8 +250,7 @@
                     <label><input type="checkbox" value="accomp rogue" id="accompRogueCheckbox"> Accompanied by Rogue Exile</label>
                     <label><input type="checkbox" value="corrupting tempest" id="corruptingTempestCheckbox"> Corrupting Tempest</label>
                     <label><input type="checkbox" value="harbinger" id="harbingerCheckbox"> Harbinger</label>
-                    <label><input type="checkbox" value="alteration" id="alterationCheckbox"> Alteration</label>
-                     <p>Allflames</p>
+                    <p>Allflames</p>
                     <label><input type="checkbox" value="meatsacks" id="meatsacksCheckbox"> Meatsacks</label>
                     <label><input type="checkbox" value="frogs" id="frogCheckbox"> Frogs</label>
                     <label><input type="checkbox" value="rats" id="ratsCheckbox"> Rats</label>
@@ -259,7 +258,11 @@
                     <label><input type="checkbox" value="scarab" id="scarabCheckbox"> Scarab</label>
                     <label><input type="checkbox" value="fracture" id="fractureCheckbox"> Fracture</label>
                     <label><input type="checkbox" value="shaper" id="shaperCheckbox"> Shaper</label>
-            
+                    <label><input type="checkbox" value="exiles" id="exilesCheckbox"> Exiles</label>
+                    <label><input type="checkbox" value="wealthy" id="wealthyCheckbox"> Wealthy</label>
+
+
+
                 </div>
     
                 <div class="form-row">
@@ -331,8 +334,7 @@
                 <label><input type="checkbox" name="mod" value="accomp rogue"> Accompanied by Rogue</label>
                 <label><input type="checkbox" name="mod" value="corrupting tempest"> Corrupting Tempest</label>
                 <label><input type="checkbox" name="mod" value="harbinger"> Harbinger</label>
-                <label><input type="checkbox" name="mod" value="alteration"> Alteration</label>
-                    <p>Allflames</p>
+                <p>Allflames</p>
                 <label><input type="checkbox" name="mod" value="meatsacks"> Meatsacks</label>
                 <label><input type="checkbox" name="mod" value="frogs"> Frogs</label>
                 <label><input type="checkbox" name="mod" value="rats"> Rats</label>
@@ -340,7 +342,9 @@
                 <label><input type="checkbox" name="mod" value="scarab"> Scarab</label>
                 <label><input type="checkbox" name="mod" value="fracture"> Fracture</label>
                 <label><input type="checkbox" name="mod" value="shaper"> Shaper</label>
-                    
+                <label><input type="checkbox" name="mod" value="exiles"> Exiles</label>
+                <label><input type="checkbox" name="mod" value="wealthy"> Wealthy</label>
+
                 <form id="modForm">
                 <div>
                     <input type="text" id="mapInput" placeholder="Enter map name" />
@@ -349,12 +353,24 @@
         
                 <button type="button" onclick="submitVote()">Confirm</button>
 
-                <div style="text-align: center; margin-top: 30px;">
-                    <h3>Watch our tutorial!</h3>
-                 
-                    <iframe width="560" height="315" src="https://www.youtube.com/embed/9wU8kUr5Bgo" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
+                <div style="text-align: center; margin-top: 30px; display: flex; align-items: center; justify-content: center;">
+                    <div style="flex: 1;">
+                        <h3>Tutorial</h3>
+                        <iframe width="560" height="315" src="https://www.youtube.com/embed/9wU8kUr5Bgo" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                
+                    <!-- PayPal Donation Button -->
+                    <div style="flex: 0; margin-left: 20px; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 10px;">Support the development-, server- & software-costs by making a donation!</p>
+                        <form action="https://www.paypal.com/donate" method="post" target="_top">
+                            <input type="hidden" name="hosted_button_id" value="MDY3YJJAM5KLN">
+                            <input type="hidden" name="business" value="franklyinvestor@gmail.com">
+                            <input type="hidden" name="currency_code" value="EUR">
+                            <input type="submit" value="Donate with PayPal" class="paypal-button" style="font-size: 18px; padding: 15px 30px; border: none; background-color: #0070ba; color: white; cursor: pointer;">
+                      
+                    </div>
                 </div>
+                
 
 
                 <footer>
