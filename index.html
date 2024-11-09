@@ -210,7 +210,7 @@
             </div>
     
             <h1>Necropolis Tracker: Settlers of Kalguur</h1>
-            <h2>Notification Settings  - Over capacity, researching for better infrastructure after some sleep  </h2>
+            <h2>Notification Settings</h2>
             <p>Select mod to be notified about:</p>
             <form id="notificationForm">
                 <div class="form-row">
@@ -331,7 +331,7 @@
                 <label><input type="checkbox" name="mod" value="blessed orbs"> Blessed Orbs</label>
                 
                 <label><input type="checkbox" name="mod" value="accomp map boss"> Accompanied by Map Boss</label>
-                <label><input type="checkbox" name="mod" value="accomp rogue"> Accompanied by Rogue Exile</label>
+                <label><input type="checkbox" name="mod" value="accomp rogue"> Accompanied by Rogue</label>
                 <label><input type="checkbox" name="mod" value="corrupting tempest"> Corrupting Tempest</label>
                 <label><input type="checkbox" name="mod" value="harbinger"> Harbinger</label>
                 <p>Allflames</p>
@@ -345,34 +345,55 @@
                 <label><input type="checkbox" name="mod" value="exiles"> Exiles</label>
                 <label><input type="checkbox" name="mod" value="wealthy"> Wealthy</label>
 
-                <form id="modForm">
-                <div>
-                    <input type="text" id="mapInput" placeholder="Enter map name" />
-                </div>
-                <ul id="mapSuggestions"></ul>
-        
-                <button type="button" onclick="submitVote()">Confirm</button>
+                <!-- Map Voting Form Section -->
+<form id="modForm" style="margin-bottom: 110px;">
+    <div>
+        <input type="text" id="mapInput" placeholder="Enter map name" />
+    </div>
+    <ul id="mapSuggestions"></ul>
 
-                <div style="text-align: center; margin-top: 30px; display: flex; align-items: center; justify-content: center;">
-                    <div style="flex: 1;">
-                        <h3>Tutorial</h3>
-                        <iframe width="560" height="315" src="https://www.youtube.com/embed/9wU8kUr5Bgo" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <button type="button" onclick="submitVote()">Confirm</button>
+</form>
+
+<!-- Tutorial Section with Left Alignment and Inline Donation Button -->
+<div style="margin-top: 50px; display: flex; align-items: flex-start; padding-left: 30px;">
+    <!-- Video Tutorial Section -->
+    <div style="margin-right: 0px;">
+        <h3 style="margin-top: 0;">Tutorial</h3>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/9wU8kUr5Bgo" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+
+    <!-- Donation Button Section -->
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <!-- Centered Text Above the Button -->
+       
+        <form onsubmit="openPaypalPopup(event)" method="post">
+            <input type="hidden" name="hosted_button_id" value="MDY3YJJAM5KLN">
+            <input type="hidden" name="business" value="franklyinvestor@gmail.com">
+            <input type="hidden" name="currency_code" value="EUR">
+            <input type="submit" value="Donate with PayPal" class="paypal-button" style="font-size: 18px; padding: 15px 30px; border: none; background-color: #0070ba; color: white; cursor: pointer;">
+            <p style="font-size: 18px; margin-bottom: 10px; text-align: center;">Support the development-, server- & software-costs by making a donation!</p>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPaypalPopup(event) {
+    event.preventDefault(); // Prevent the default form submission
+    // Open PayPal link in a new, smaller window
+    window.open(
+        "https://www.paypal.com/donate?hosted_button_id=MDY3YJJAM5KLN&business=franklyinvestor@gmail.com&currency_code=EUR",
+        "PayPal Donation",
+        "width=600,height=700"
+    );
+}
+</script>
+
+
+              
                     </div>
-                
-                    <!-- PayPal Donation Button -->
-                    <div style="flex: 0; margin-left: 20px; text-align: center;">
-                        <p style="font-size: 18px; margin-bottom: 10px;">Support the development-, server- & software-costs by making a donation!</p>
-                        <form action="https://www.paypal.com/donate" method="post" target="_top">
-                            <input type="hidden" name="hosted_button_id" value="MDY3YJJAM5KLN">
-                            <input type="hidden" name="business" value="franklyinvestor@gmail.com">
-                            <input type="hidden" name="currency_code" value="EUR">
-                            <input type="submit" value="Donate with PayPal" class="paypal-button" style="font-size: 18px; padding: 15px 30px; border: none; background-color: #0070ba; color: white; cursor: pointer;">
-                      
-                    </div>
                 </div>
-                
-
-
+             
                 <footer>
                     <div style="text-align: center; padding: 20px;">
                         <p>&copy; 2024 necropolistracker. All rights reserved.</p>
@@ -382,6 +403,7 @@
                         </p>
                     </div>
                 </footer>
+        
             </form>
         </section>
 
