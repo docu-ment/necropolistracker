@@ -424,7 +424,19 @@ function openPaypalPopup(event) {
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"; 
         import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-        import FirebaseConfig from './firebase-config';
+       
+
+
+const firebaseConfig = {
+            apiKey: "AIzaSyAp8H_Lcu1ySmbmAUEwRPSkwHbUBWHSx2Y",
+            authDomain: "necropolistracker.firebaseapp.com",
+            databaseURL: "https://necropolistracker-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "necropolistracker",
+            storageBucket: "necropolistracker.appspot.com",
+            messagingSenderId: "327513254673",
+            appId: "1:327513254673:web:00a4feff1acc6fe9be7ab0",
+            measurementId: "G-5FQKZ5M6KC"
+        };
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase();
