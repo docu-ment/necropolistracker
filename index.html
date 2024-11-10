@@ -219,7 +219,7 @@
 </div>
 
 
-            <h2>Notification Settings</h2>
+            <h2>Notification Settings - Testing tech for bigger deployment </h2>
             <p>Select mod to be notified about:</p>
             <form id="notificationForm">
                 <div class="form-row">
@@ -427,15 +427,16 @@ function openPaypalPopup(event) {
         
         // Initialize Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyAp8H_Lcu1ySmbmAUEwRPSkwHbUBWHSx2Y",
-            authDomain: "necropolistracker.firebaseapp.com",
-            databaseURL: "https://necropolistracker-default-rtdb.europe-west1.firebasedatabase.app/",
-            projectId: "necropolistracker",
-            storageBucket: "necropolistracker.appspot.com",
-            messagingSenderId: "327513254673",
-            appId: "1:327513254673:web:00a4feff1acc6fe9be7ab0",
-            measurementId: "G-5FQKZ5M6KC"
-        };
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+};
+
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase();
