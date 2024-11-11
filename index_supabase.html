@@ -435,14 +435,20 @@ async function authenticateUser() {
 
     if (error) {
         console.error('Authentication error:', error.message);
+        return; // Exit if there's an error
+    }
+
+    if (user) {
+        console.log('User authenticated:', user);
+        // Optionally, store user info or perform other actions
     } else {
-        if (user) {
-            console.log('User authenticated:', user);
-        } else {
-            console.log('No authenticated user');
-        }
+        console.log('No authenticated user');
     }
 }
+
+// Call authenticateUser to test
+authenticateUser();
+
 
 
 let votedMaps = {};
