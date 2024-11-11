@@ -429,22 +429,76 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
  
 
-// Example for anonymous authentication
-async function authenticateUser() {
-    const { user, error } = await supabase.auth.signInAnonymously();
 
-    if (error) {
-        console.error('Authentication error:', error.message);
-        return; // Exit if there's an error
-    }
 
-    if (user) {
+
+
+
+let isAuthenticating = false;
+
+// Retry-enabled anonymous authentication function
+async function authenticateUserWithRetry(retries = 3, delay = 1000) {
+    if (isAuthenticating) return; // Prevent multiple calls if already in progress
+    isAuthenticating = true;
+
+    try {
+        const { data: { user }, error } = await supabase.auth.signInAnonymously();
+
+        if (error) throw new Error(error.message);
+
         console.log('User authenticated:', user);
-        // Optionally, store user info or perform other actions
-    } else {
-        console.log('No authenticated user');
+        isAuthenticating = false; // Reset state after successful authentication
+        return user; // Return the authenticated user data
+
+    } catch (error) {
+        isAuthenticating = false; // Reset state in case of an error
+
+        if (retries > 0 && error.message.includes('Request rate limit reached')) {
+            console.log(`Rate limit reached, retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
+            return authenticateUserWithRetry(retries - 1, delay); // Retry authentication
+        } else {
+            console.error('Authentication error:', error.message);
+            return null; // Return null if out of retries or other errors occur
+        }
     }
 }
+
+// Call the retry authentication function once and handle the result
+authenticateUserWithRetry().then(async (user) => {
+    if (user) {
+        console.log('Successfully authenticated:', user);
+        const currentUser = await checkCurrentUser(); // Check and log the current user
+        if (currentUser) {
+            console.log('Confirmed current user:', currentUser);
+        } else {
+            console.log('No current authenticated user found');
+        }
+    } else {
+        console.log('Authentication failed');
+    }
+});
+
+
+async function checkCurrentUser() {
+    const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+
+    if (error) {
+        console.error('Error retrieving current user:', error.message);
+        return null;
+    }
+
+    if (currentUser) {
+        console.log('Current authenticated user:', currentUser); // Log user if authenticated
+        return currentUser;
+    } else {
+        console.log('No authenticated user');
+        return null;
+    }
+}
+
+
+
 
 // Check the current user using the updated method
 const currentUser = supabase.auth.getUser();
@@ -455,10 +509,6 @@ if (currentUser) {
     console.log('No authenticated user');
 }
 
-// Call authenticateUser to test
-authenticateUser();
-
-
 
 
 let votedMaps = {};
@@ -466,16 +516,20 @@ let votedMaps = {};
 let userVotes = {};
 let userId = localStorage.getItem('userId');
 if (!userId) {
-    // Generate a simple userId (for demo purposes, use a random ID or integrate authentication)
-    userId = `user-${Math.random().toString(36).substr(2, 9)}`;
+    userId = `user-${Math.random().toString(36).substr(2, 9)}`; // Generate a simple unique ID
     localStorage.setItem('userId', userId);
 }
+console.log("User ID:", userId);
 
 let notificationSettings = {
         mods: [], // Array of selected mods PROPERTY
         upvoteThreshold: 1,
         volume: 50
 };
+
+
+
+
 
 // Reference the 'votes' table
 const ref = supabase.from('votes');
@@ -593,6 +647,9 @@ async function loadVotesFromSupabase() {
         displayVotedMaps();  // Call this function to update the display
 }
 
+
+
+
 async function confirmVote(mapInput, modifiers) {
     const voteData = {
         map_name: mapInput, // Adjust field name as necessary
@@ -676,7 +733,7 @@ updateTimer();
 
 // Handle updating the vote count (upvote or downvote)
 async function updateVote(uniqueVoteKey, voteValue) {
-    const user = await authenticateUser();
+   
     if (!user) {
         alert('User authentication failed!');
         return;
@@ -891,11 +948,7 @@ function updateTabTitle(mapName, upvotes) {
         return;
     }
 
-    const user = await authenticateUser();
-    if (!user) {
-        alert('User authentication failed!');
-        return;
-    }
+   
 
     const modifiersKey = modifiers.sort().join('_');
     const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
@@ -965,8 +1018,6 @@ if (existingVote) {
 }
 
   
-    // Call the function to authenticate the user
-    authenticateUser();
 
         function searchMap() {
             const input = document.getElementById('mapInput').value.toLowerCase();
@@ -1076,8 +1127,7 @@ function showBackgroundNotification() {
 document.addEventListener('DOMContentLoaded', async () => {
             const timerDisplay = document.getElementById('timerDisplay');
 
-            // Authenticate user
-            const user = await authenticateUser();
+            const user = await authenticateUserWithRetry();
             
             if (user) {
                 console.log('Authenticated user:', user);
