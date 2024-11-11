@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Necropolis Tracker</title>
-    <script src="https://unpkg.com/@supabase/supabase-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
     <script src="cookies.js" defer></script>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <script src="index.obfuscated.js" ></script>
@@ -193,7 +194,9 @@
             height: 0px; /* Adjust form height */
         }
   
-       /* Ensure the confirm button stays at the bottom */
+
+    
+        /* Ensure the confirm button stays at the bottom */
         button[type="button"] {
             margin-top: auto;  /* Push button to the bottom */
         }
@@ -211,9 +214,10 @@
 <!-- Reddit Share Link Section -->
 <div style="margin-top: 20px; text-align: center;">
     <a href="https://www.reddit.com/r/pathofexile/comments/1gls1yb/necropolis_tracker_for_325_settlers_of_kalguur/" target="_blank" style="font-size: 18px; padding: 10px 20px; border: 2px solid #0070ba; background-color: #f7f7f7; color: #0070ba; text-decoration: none; cursor: pointer; border-radius: 5px;">
-       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken, working on adding watchstones & monster type settings next
+       Over capacity, working on expanding it. Click here, like and share the Reddit post, more people = more coverage & accuracy
     </a>
 </div>
+
 
             <h2>Notification Settings</h2>
             <p>Select mod to be notified about:</p>
@@ -267,6 +271,7 @@
                     <label><input type="checkbox" value="wealthy" id="wealthyCheckbox"> Wealthy</label>
 
 
+
                 </div>
     
                 <div class="form-row">
@@ -280,9 +285,7 @@
                     Enable Notifications
                 </label>
     
-               
-                <button type="button" id="set-notifications-button">Set Notifications</button>
-
+                <button type="button" onclick="setNotifications()">Set Notifications</button>
                 <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
             </form>
         </section>
@@ -291,7 +294,7 @@
             <h2 class="voted-maps-header">
                 <div>
                     <span>Voted Maps</span>
-                    <span id="timerDisplay">2:22</span>
+                    <span id="timer" class="timer">1:19</span>
                 </div>
             </h2>
     
@@ -394,7 +397,9 @@ function openPaypalPopup(event) {
     );
 }
 </script>
-             
+
+
+              
                     </div>
                 </div>
              
@@ -415,97 +420,37 @@ function openPaypalPopup(event) {
         <audio id="notificationSound" src="audio.mp3" preload="auto"></audio>
 
     <script type="module">
-     
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"; 
+        import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
        
 
-// Import Supabase functions
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+const firebaseConfig = {
+            apiKey: "AIzaSyAp8H_Lcu1ySmbmAUEwRPSkwHbUBWHSx2Y",
+            authDomain: "necropolistracker.firebaseapp.com",
+            databaseURL: "https://necropolistracker-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "necropolistracker",
+            storageBucket: "necropolistracker.appspot.com",
+            messagingSenderId: "327513254673",
+            appId: "1:327513254673:web:00a4feff1acc6fe9be7ab0",
+            measurementId: "G-5FQKZ5M6KC"
+        };
 
-// Supabase setup
-
-const supabaseUrl = 'https://aeobobkzmisqxlfgejum.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlb2JvYmt6bWlzcXhsZmdlanVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzEyNDM5OTUsImV4cCI6MjA0NjgxOTk5NX0.BquPT-FLwqAu-BYtWPxPWctPvIwoEwVB0PKpC0mmAd4';  // Use your actual key
-const supabase = createClient(supabaseUrl, supabaseKey);
- 
-
-async function authenticateUser() {
-    // Check if there's an existing user session
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (!user) {
-        // No user, so sign in anonymously (no email or password)
-        const { data, error: signInError } = await supabase.auth.signIn();
-
-        if (signInError) {
-            console.error('Error signing in anonymously:', signInError);
-            return null;
-        }
-
-        return data.user; // Return the user object
-    }
-
-    return user; // Return the user if already authenticated
-}
-
-let votedMaps = {};
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase();
+        const db = getFirestore(app);
+        let votedMaps = {};
        
-let userVotes = {};
-let userId = localStorage.getItem('userId');
-if (!userId) {
-    // Generate a simple userId (for demo purposes, use a random ID or integrate authentication)
-    userId = `user-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('userId', userId);
-}
-
-let notificationSettings = {
-        mods: [], // Array of selected mods PROPERTY
-        upvoteThreshold: 1,
-        volume: 50
-};
-
-// Reference the 'votes' table
-const ref = supabase.from('votes');
+        let userVotes = {};
+        let notificationSettings = {
+            mods: [], // Array of selected mods PROPERTY
+            upvoteThreshold: 1,
+            volume: 50
+        };
 
 
-
-// Store the last known list of maps and their states
-let lastKnownMaps = new Set();
-
-// Subscribe to changes (inserts and deletes)
-const votesSubscription = supabase
-    .channel('votes')
-    .on('postgres_changes', {
-        event: 'INSERT',  // Detect new listings
-        schema: 'public',
-        table: 'voted_maps',
-    }, (payload) => {
-        console.log('New listing inserted:', payload.new);
-        const mapName = payload.new.map_name;
-        if (!lastKnownMaps.has(mapName)) {
-            lastKnownMaps.add(mapName);
-            displayVotedMaps();  // Trigger display update for the new map
-        }
-    })
-    .on('postgres_changes', {
-        event: 'DELETE',  // Detect deleted listings
-        schema: 'public',
-        table: 'voted_maps',
-    }, (payload) => {
-        console.log('Listing deleted:', payload.old);
-        const mapName = payload.old.map_name;
-        lastKnownMaps.delete(mapName);
-        displayVotedMaps();  // Trigger display update for the deleted map
-    })
-    .subscribe();
-
-
-
-        window.onload = function () {
-        loadVotesFromSupabase();
-  
-        checkNotificationPermission(); // Check if notifications are enabled
-};     
         
         const maps = [
             "Olmec's Sanctum", "Gardens Map", "Siege Map", "Bone Crypt Map", "Scriptorium Map", "Pillars of Arun",
@@ -560,271 +505,191 @@ const votesSubscription = supabase
             "Act 9 - The Boiling Lake", "Act 9 - The Tunnel", "Act 9 - The Belly of the Beast", "Act 9 - The Quarry", "Act 9 - The Refinery", "Act 9 - The Rotting Core", 
             "Act 10 - The Cathedral Rooftop", "Act 10 - The Ravaged Square", "Act 10 - The Torched Courts", "Act 10 - The Desecrated Chambers", 
             "Act 10 - The Canals", "Act 10 - The Control Blocks", "Act 10 - The Feeding Trough", "Act 10 - The Reliquary", "Act 10 - The Ossuary"
-            
+
+        
         ];
         
-        // Fetch all votes from Supabase
-async function loadVotesFromSupabase() {
-        const { data, error } = await supabase.from('votes').select('*').order('timestamp', { ascending: false });
-        if (error) {
-            console.error('Error loading votes:', error);
-            return;
+        function loadVotesFromFirebase() {
+            const votesRef = ref(database, 'votes');
+            onValue(votesRef, (snapshot) => {
+                votedMaps = snapshot.val() || {};
+                displayVotedMaps();
+            });
         }
 
-        // Store the votes in the global votedMaps object
-        votedMaps = data.reduce((map, entry) => {
-            map[entry.map_name] = entry;
-            return map;
-        }, {});
-
-        displayVotedMaps();  // Call this function to update the display
-}
-
-async function confirmVote(mapInput, modifiers) {
+        function confirmVote(mapInput, modifiers) {
     const voteData = {
-        map_name: mapInput, // Adjust field name as necessary
-        modifiers: modifiers,
-        votes: 1,
-        downvotes: 0,
-        created_at: new Date().toISOString()
+        modifiers: modifiers // Assuming modifiers is an array
     };
 
-    const { error } = await supabase.from('votes').upsert(voteData);
-    if (error) {
-        console.error('Error uploading data:', error);
-    } else {
-        console.log('Vote confirmed for', mapInput);
-        displayVotedMaps();
-    }
+    const votedMapsRef = firebase.database().ref(`votes/${mapInput}`);
+    votedMapsRef.set(voteData, (error) => {
+        if (error) {
+            console.error('Error uploading data:', error);
+        } else {
+            console.log('Vote confirmed for', mapInput);
+            displayVotedMaps(); // Refresh the list after confirming OF
+        }
+    });
 }
 
-async function displayVotedMaps() {
+function displayVotedMaps() {
     const votedMapsList = document.getElementById('votedMapsList');
     votedMapsList.innerHTML = ''; // Clear existing list
 
-    const { data: votedMaps, error } = await supabase
-        .from('voted_maps')
-        .select('*');
+    for (const mapName in votedMaps) {
+        if (votedMaps.hasOwnProperty(mapName)) {
+            const mapData = votedMaps[mapName];
+            const modifiersList = mapData.modifiers.join(', '); // Join modifiers into a string
+            const votesCount = mapData.votes || 0; // Get the vote count
 
-    if (error) {
-        console.error('Error retrieving voted maps:', error);
-        return;
-    }
+            // Extract the base map name (before any modifiers)
+            const baseMapName = mapName.split('_')[0]; // Get only the part before the first underscore
 
-    // Sort the maps by votes in descending order
-    votedMaps.sort((a, b) => b.votes - a.votes); // Sorting from most positive to least votes
+            // Create a list item with the desired format
+            const listItem = document.createElement('li');
+            listItem.className = 'voted-map-entry'; // Add a class for styling
+            listItem.textContent = `${baseMapName} | Modifiers: [${modifiersList}] | Votes: ${votesCount}`;
 
-    // Loop through the sorted maps and display them
-    votedMaps.forEach(map => {
-        const modifiersList = map.modifiers.join(', ');
-        const listItem = document.createElement('li');
-        listItem.className = 'voted-map-entry';
-        listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Votes: ${map.votes}`;
+            // Create upvote and downvote buttons
+            const upvoteButton = document.createElement('button');
+            upvoteButton.textContent = 'Upvote ';
+            upvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, 1); // Upvote logic
 
-        const upvoteButton = document.createElement('button');
-        upvoteButton.textContent = 'Upvote';
-        upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
+            const downvoteButton = document.createElement('button');
+            downvoteButton.textContent =  ' Downvote';
+            downvoteButton.onclick = () => updateVote(mapName, mapData.modifiers, -1); // Downvote logic
 
-        const downvoteButton = document.createElement('button');
-        downvoteButton.textContent = 'Downvote';
-        downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
-
-        listItem.appendChild(upvoteButton);
-        listItem.appendChild(downvoteButton);
-        votedMapsList.appendChild(listItem);
-    });
-}
-
-
-function getNextHour() {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0).getTime();
-}
-
-let nextResetTime = getNextHour(); // Calculate the initial next reset time
-
-function updateTimer() {
-    const now = Date.now();
-    const timeRemaining = nextResetTime - now; // Time remaining until next full hour
-    const timerDisplay = document.getElementById('timerDisplay');
-    
-    if (timerDisplay) {
-        timerDisplay.textContent = new Date(timeRemaining).toISOString().substr(14, 5); // Convert remaining time to mm:ss format
-    } else {
-        console.warn("Timer display element not found.");
-    }
-}
-
-if (window.countdownInterval) clearInterval(window.countdownInterval);
-window.countdownInterval = setInterval(updateTimer, 1000); // Update every second
-
-// Initial call to set display immediately
-updateTimer();
-
-// Handle updating the vote count (upvote or downvote)
-async function updateVote(uniqueVoteKey, voteValue) {
-    const user = await authenticateUser();
-    if (!user) {
-        alert('User authentication failed!');
-        return;
-    }
-
-    // Check if user has already voted
-    const { data: existingVote, error: voteError } = await supabase
-        .from('user_votes')
-        .select('vote_type')
-        .eq('user_id', user.id)
-        .eq('unique_vote_key', uniqueVoteKey)
-        .single();
-
-    if (voteError) {
-        console.error('Error checking existing vote:', voteError);
-        return;
-    }
-
-    if (existingVote) {
-        alert('You have already voted for this combination.');
-        return;
-    }
-
-    // Update vote count in `voted_maps` table
-    const { error: updateError } = await supabase
-        .rpc('increment_votes', { key: uniqueVoteKey, value: voteValue });
-
-    if (updateError) {
-        console.error('Error updating vote:', updateError);
-        return;
-    }
-
-    // Record the user vote
-    const { error: insertError } = await supabase
-        .from('user_votes')
-        .insert([{ user_id: user.id, unique_vote_key: uniqueVoteKey, vote_type: voteValue }]);
-
-    if (insertError) {
-        console.error('Error recording user vote:', insertError);
-    } else {
-        displayVotedMaps();
+            // Append buttons to list item
+            listItem.appendChild(upvoteButton);
+            listItem.appendChild(downvoteButton);
+            votedMapsList.appendChild(listItem);
+        }
     }
 }
 
 
-async function getVotes(mapName, modifiers) {
-    try {
-        const { data, error } = await supabase
-            .from('votes')
-            .select('votes, downvotes, timestamp')
-            .eq('map_name', mapName)  // Query by map name
-            .contains('modifiers', modifiers)  // Match by modifiers
-            .order('timestamp', { ascending: true }); // Order by timestamp, ascending for the newest first
+// Function to update the vote count (called when a user upvotes/downvotes)
+function updateVote(mapId, modifiers, voteType) {
+    // Check if the user has already voted on this map
+    if (userVotes[mapId] !== undefined) {
+        alert('You have already voted for this map.');
+        return; // Prevent further voting on the same map
+    }
 
-        if (error) {
-            console.error('Error reading votes:', error);
-            return null;
+    const votesRef = ref(database, 'votes/' + mapId); // Reference to the votes in the database
+
+    // Use the get method to read the votes once
+    get(votesRef).then((snapshot) => {
+        let currentVotes = snapshot.val() || { votes: 0, downvotes: 0 }; // Default structure for votes and downvotes
+
+        // Update votes count based on vote type
+        if (voteType === 1) { // Upvote
+            currentVotes.votes = (currentVotes.votes || 0) + 1;
+
+           
+
+        } else if (voteType === -1) { // Downvote
+            currentVotes.votes = (currentVotes.votes || 0) - 1;
+            currentVotes.downvotes = (currentVotes.downvotes || 0) + 1;
         }
 
-        return data;
-    } catch (error) {
-        console.error('Error fetching votes:', error);
-    }
-}
-
-setInterval(() => {
-    console.log("Refreshing map list...");
-    displayVotedMaps();  // Call the function to fetch and display all maps
-}, 120000);  // 60000 ms = 1 minute
-
-function updateVotedMapsDisplay(data) {
-    const container = document.getElementById('votedMapsContainer');
-    container.innerHTML = '';  // Clear previous data
-
-    data.forEach((entry) => {
-        try {
-            // Parse the modifiers from the string to an array
-            const modifiers = JSON.parse(entry.modifiers); 
-
-            // Create a display element for each map entry
-            const mapElement = document.createElement('div');
-            mapElement.classList.add('map-entry');
-            mapElement.innerHTML = `
-                <h3>${entry.map_name}</h3>
-                <p>Modifiers: ${modifiers.join(', ')}</p>
-                <p>Votes: ${entry.votes}</p>
-                <p>Downvotes: ${entry.downvotes}</p>
-                <p>Timestamp: ${new Date(entry.timestamp).toLocaleString()}</p>
-            `;
-            container.appendChild(mapElement);
-        } catch (error) {
-            console.error('Error parsing modifiers:', error);
-        }
-    });
-}
-
-
-// Delete a map if it gets too many downvotes
-async function deleteMap(mapId) {
-        const { error } = await supabase.from('votes').delete().eq('map_name', mapId);
-        if (error) {
-            console.error("Error deleting map:", error);
+        // Check if the map should be deleted due to too many downvotes
+        if (currentVotes.downvotes >= 44) {  // You can adjust the threshold (e.g., 3 downvotes)
+            deleteMap(mapId); // Call the delete function to remove the map
         } else {
-            console.log(`Map ${mapId} deleted due to too many downvotes.`);
-            loadVotesFromSupabase();  // Refresh the voted maps display
+            // Update the database with the new votes count
+            set(votesRef, currentVotes)
+    .then(() => {
+        console.log(`Votes updated for ${mapId}: ${currentVotes.votes}`);
+        checkNotifications(mapId); // Pass updated map ID here
+        userVotes[mapId] = voteType; 
+        loadVotesFromFirebase(); 
+    })
+    .catch((error) => {
+        console.error("Error updating votes:", error);
+    });
+
         }
+    }).catch((error) => {
+        console.error("Error reading votes:", error);
+    });
 }
 
-const notifiedMaps = {};
+ // Function to delete a map from the database (if too many downvotes) FRANKLY
+ function deleteMap(mapId) {
+            const mapRef = ref(database, 'votes/' + mapId);
+            set(mapRef, null).then(() => {
+                console.log(`Map ${mapId} deleted due to too many downvotes.`);
+                loadVotesFromFirebase(); // Refresh the display
+            }).catch((error) => {
+                console.error("Error deleting map:", error);
+            });
+        }
 
-function checkNotifications(mapName) {
+
+        const notifiedMaps = {};
+
+        function checkNotifications(mapName) {
     const mapVotes = votedMaps[mapName];
-    if (!mapVotes) return;  // No data for this map
-    
-    const upvotes = mapVotes.votes || 0;
+    const upvotes = mapVotes?.votes || 0;
     const selectedModifiers = notificationSettings.mods;
 
-    // Log values to debug
-    console.log('Map Votes:', mapVotes);
-    console.log('Selected Modifiers:', selectedModifiers);
+    // Check if any of the selected modifiers match the updated map's modifiers
+    const modifierMatch = selectedModifiers.some(mod => mapVotes.modifiers.includes(mod));
 
-    const modifierMatch = selectedModifiers.some(mod => {
-        console.log(mapVotes.modifiers);  // Log map modifiers
-        return mapVotes.modifiers.includes(mod);
-    });
-
-    // Log for modifier match
-    console.log('Modifier Match:', modifierMatch);
-
+    // Only notify if upvote threshold is met, there is a modifier match, and notification hasn't been triggered for this map
     if (upvotes >= notificationSettings.upvoteThreshold && modifierMatch && !notifiedMaps[mapName]) {
-        console.log(`Notifying for map: ${mapName}`);
+        // Mark this map as notified to prevent duplicate notifications
         notifiedMaps[mapName] = true;
 
+        // Trigger notification sound and alert
         const sound = document.getElementById('notificationSound');
-        sound.volume = Number(notificationSettings.volume) / 100;
-        console.log(sound);  // Check sound object before playing
+        sound.volume = notificationSettings.volume / 100; 
         sound.play();
 
         const formattedModifiers = mapVotes.modifiers.join(', ').replace(/_/g, ' ');
         alert(`Notification! ${mapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
-        updateTabTitle(mapName, upvotes);
+
+        updateTabTitle(mapName, upvotes); // Update tab title
     }
 
+    // Reset notified status if upvotes drop below threshold
     if (upvotes < notificationSettings.upvoteThreshold) {
         notifiedMaps[mapName] = false;
     }
 }
 
-const notificationStatus = document.getElementById('notificationStatus');
+
+
+function updateTabTitle(mapName, upvotes) {
+    // Retrieve or initialize a counter for this map
+    if (!window.voteCounters) window.voteCounters = {};
+
+    // Initialize or increment the counter for the map
+    if (!window.voteCounters[mapName]) {
+        window.voteCounters[mapName] = 0;
+    }
+    window.voteCounters[mapName]++;
+
+    // Format the tab title with the vote count in parentheses SPEAKING
+    const voteCount = window.voteCounters[mapName];
+    document.title = `(${voteCount}) ${mapName} - Map Tracker`;
+
+    // Optionally, reset the tab title back to normal if no votes are left
+    setTimeout(() => {
+        if (window.voteCounters[mapName] === voteCount) {
+            document.title = 'Map Tracker';  // Reset after a short delay, or keep it as is
+        }
+    }, 10000); // Reset after 10 seconds or choose any duration
+}
 
 
 function setNotifications() {
     // Get selected mods and settings from the user input
     const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
-    const upvoteThreshold = Number(document.getElementById('upvoteThreshold').value);
-    const volume = Number(document.getElementById('volumeControl').value);
-
-    // Log values to check if they're being read correctly
-    console.log('Selected Mods:', selectedMods);
-    console.log('Upvote Threshold:', upvoteThreshold);
-    console.log('Volume:', volume);
+    const upvoteThreshold = document.getElementById('upvoteThreshold').value;
+    const volume = document.getElementById('volumeControl').value;
 
     // Update notification settings
     notificationSettings.mods = selectedMods;
@@ -838,122 +703,71 @@ function setNotifications() {
 
 
 
-function updateVolume() {
-    const volumeControl = document.getElementById('volumeControl');
-    const volumeValue = document.getElementById('volumeValue');
-    volumeValue.innerText = volumeControl.value + "%";
-    const sound = document.getElementById('notificationSound');
-    sound.volume = volumeControl.value / 100;
-}
 
+        
 
-
-
-function updateTabTitle(mapName, upvotes) {
-        if (!window.voteCounters) window.voteCounters = {};
-
-        if (!window.voteCounters[mapName]) {
-            window.voteCounters[mapName] = 0;
+        function updateVolume() {
+            const volumeControl = document.getElementById('volumeControl');
+            const volumeValue = document.getElementById('volumeValue');
+            volumeValue.innerText = volumeControl.value + "%";
+            const sound = document.getElementById('notificationSound');
+            sound.volume = volumeControl.value / 100;
         }
-        window.voteCounters[mapName]++;
 
-        const voteCount = window.voteCounters[mapName];
-        document.title = `(${voteCount}) ${mapName} - Map Tracker`;
-
-        setTimeout(() => {
-            if (window.voteCounters[mapName]) window.voteCounters[mapName]--;
-        }, 5000); // Reset after 2 seconds to prevent overflow
-    }
-
-
-
-        let modifiers = [];
-
-        async function submitVote() {
+        function submitVote() {
     const mapInput = document.getElementById('mapInput').value.trim();
     const modifiers = Array.from(document.querySelectorAll('input[name="mod"]:checked')).map(input => input.value);
 
-    if (!maps.includes(mapInput) || !modifiers.length) {
-        alert('Please select a valid map and at least one modifier.');
+    // Check if the map is valid before submitting
+    if (!maps.includes(mapInput)) {
+        alert('Please select a valid map from the suggestions or enter a correct map name.');
         return;
     }
 
-    const user = await authenticateUser();
-    if (!user) {
-        alert('User authentication failed!');
+    if (!modifiers.length) {
+        alert('Please select at least one modifier.');
         return;
     }
 
+    // Check if the user has already voted
+    if (userVotes[mapInput] !== undefined) {
+        alert('You have already voted for this map.');
+        return; // Prevent further voting on the same map
+    }
+
+    // Create a unique key for the vote
     const modifiersKey = modifiers.sort().join('_');
     const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
 
-// Check if the user has already voted (both in session and DB)
-const { data: existingVote, error: voteError } = await supabase
-    .from('user_votes')
-    .select('vote_type')
-    .eq('user_id', user.id)
-    .eq('unique_vote_key', uniqueVoteKey)
-    .single();  // Retrieve a single record
+    const votesRef = ref(database, 'votes/' + uniqueVoteKey);
 
-if (voteError && voteError.code !== 'PGRST116') {  // Handle any error except "no rows" error
-    console.error('Error checking existing vote:', voteError);
-    return;
-}
-
-if (existingVote) {
-    // User has already voted on this unique vote key
-    alert('You have already voted for this combination.');
-    return;  // Prevent further voting
-}
-
-// Continue with submitting the vote if no existing vote is found
-
-
-    // Update votes in `voted_maps` table
-    const { error: voteUpdateError } = await supabase
-        .from('voted_maps')
-        .upsert([{
-            map_name: mapInput,
-            modifiers: modifiers,
-            unique_vote_key: uniqueVoteKey,
-            votes: 1,  // Always add 1 for each new vote submission
-            timestamp: new Date().toISOString()
-        }], { onConflict: ['unique_vote_key'] });
-
-    if (voteUpdateError) {
-        console.error('Error updating votes:', voteUpdateError);
+    // Always set the vote count to 1 for this new submission
+    set(votesRef, {
+        modifiers: modifiers,
+        votes: 1, // Set count to 1 for new submissions
+        timestamp: serverTimestamp()
+    })
+    .then(() => {
+        console.log(`Vote submitted for ${mapInput}: ${modifiers}`);
+        userVotes[mapInput] = 1; // Mark this map as voted
+        alert(`Thank you for voting for ${mapInput}!`);
+        displayVotedMaps(); // Ensure the list updates immediately after submitting a vote
+    })
+    .catch((error) => {
+        console.error('Error submitting vote:', error);
         alert('Failed to submit vote. Please try again later.');
-        return;
-    }
+    });
 
-    // Record the user vote in `user_votes`
-    const { error: userVoteError } = await supabase
-        .from('user_votes')
-        .insert([{
-            user_id: user.id,
-            unique_vote_key: uniqueVoteKey,
-            vote_type: 1  // Record the upvote
-        }]);
-
-    if (userVoteError) {
-        console.error('Error saving user vote:', userVoteError);
-        alert('Failed to save your vote.');
-        return;
-    }
-
-    alert(`Vote submitted for ${mapInput}!`);
-    displayVotedMaps();
-
-    // Reset form fields
+    // Uncheck all the checkboxes after submission GAMES
     document.querySelectorAll('input[name="mod"]:checked').forEach(checkbox => {
         checkbox.checked = false;
     });
-    document.getElementById('mapInput').value = '';
+
+    document.getElementById('mapInput').value = '';  // Clear the map input
+    document.getElementById('mapSuggestions').innerHTML = ''; // Clear suggestions after vote
+    displayVotedMaps();
 }
 
-  
-    // Call the function to authenticate the user
-    authenticateUser();
 
         function searchMap() {
             const input = document.getElementById('mapInput').value.toLowerCase();
@@ -976,62 +790,83 @@ if (existingVote) {
         }
 
         document.getElementById('mapInput').addEventListener('input', searchMap);
-        document.getElementById('set-notifications-button').addEventListener('click', setNotifications);
-
         
-
-        let countdownInterval;
-
         function startTimer() {
-    clearInterval(countdownInterval); // Clear any existing intervals
+    const timerDisplay = document.getElementById('timer');
 
-    countdownInterval = setInterval(() => {
-        // Get the current time
+    // Calculate the time remaining until the next full hour
+    function getNextHour() {
         const now = new Date();
-        
-        // Calculate the next full hour
-        const nextHour = new Date();
-        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-        
-        // Calculate the time difference in seconds
-        const diffInSeconds = Math.floor((nextHour - now) / 1000);
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0).getTime();
+    }
 
-        // Calculate minutes and seconds
-        const minutes = Math.floor((diffInSeconds % 3600) / 60);
-        const seconds = diffInSeconds % 60;
+    let nextResetTime = getNextHour();
 
-        // Format and display the timer
-        const timerDisplay = document.getElementById('timerDisplay');
-        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    function updateTimer() {
+        const now = Date.now();
+        const timeRemaining = nextResetTime - now;
 
-        // Stop the interval if it reaches zero and reset
-        if (diffInSeconds <= 0) {
-            clearInterval(countdownInterval);
-            startTimer(); // Restart to countdown towards the next hour
+        // Calculate minutes and seconds left
+        const minutes = Math.floor(timeRemaining / 60000);
+        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+
+        // Update the timer display
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        if (timeRemaining <= 0) {
+            resetVotes(); // Reset votes when countdown reaches 0
+            nextResetTime = getNextHour(); // Set next reset time to the following full hour
         }
-    }, 1000);
+    }
+
+    // Clear any existing interval to prevent overlaps
+    if (window.countdownInterval) clearInterval(window.countdownInterval);
+
+    // Start a new countdown interval
+    window.countdownInterval = setInterval(updateTimer, 1000); // Update every second
+    updateTimer(); // Initial call to set display immediately
 }
 
-// Start the timer
-startTimer();
-    
+        function resetVotes() {
+            const votesRef = ref(database, 'votes');
+            set(votesRef, {}); // Reset all votes
+            alert("All votes have been reset.");
+        }
+        
 
+        window.onload = function() {
+    loadVotesFromFirebase();  // Initial vote load
+    startTimer();             // Timer for vote reset
+    checkNotificationPermission(); // Check if notifications are enabled
+
+    // Add real-time listener for changes in votes
+    const votesRef = ref(database, 'votes');
+    onValue(votesRef, (snapshot) => {
+        votedMaps = snapshot.val() || {}; // Update local voted maps
+
+        // Check each map to see if it meets the notification criteria
+        for (const mapName in votedMaps) {
+            checkNotifications(mapName); // Check notifications for each updated map
+        }
+        
+        displayVotedMaps(); // Update the displayed list
+    });
+};
+
+
+// Check if notifications are already granted or denied DOCU
 function checkNotificationPermission() {
     if (Notification.permission === 'granted') {
-        console.log('Notifications are already enabled.');
+        // Notifications are already enabled
+        console.log('Notifications are enabled');
     } else if (Notification.permission === 'denied') {
-        console.log('Notifications are denied.');
+        // Notifications are disabled
+        console.log('Notifications are denied');
     } else {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                console.log('Notifications enabled.');
-            } else {
-                console.log('Notifications denied.');
-            }
-        });
+        // Ask for permission to show notifications
+        requestNotificationPermission();
     }
 }
-
 
 // Request notification permission from the user
 function requestNotificationPermission() {
@@ -1060,47 +895,35 @@ function showBackgroundNotification() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-            const timerDisplay = document.getElementById('timerDisplay');
 
-            // Authenticate user
-            const user = await authenticateUser();
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVotesFromFirebase();
+            startTimer();
+            checkNotificationPermission();
             
-            if (user) {
-                console.log('Authenticated user:', user);
-            } else {
-                console.log('No authenticated user');
-            }
+    
+            // Expose functions to the global scope
+            window.setNotifications = setNotifications;
+            window.submitVote = submitVote;
+            window.updateVolume = updateVolume;
+    
+            const mapInput = document.getElementById('mapInput');
+            mapInput.addEventListener('input', () => {
+                const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
+                const mapSuggestions = document.getElementById('mapSuggestions');
+                mapSuggestions.innerHTML = ''; // Clear previous suggestions
 
-            if (timerDisplay) {
-                // Your other functions
-                loadVotesFromSupabase();
-                checkNotificationPermission(); // Check if notifications are enabled
-
-                // Expose functions to the global scope
-                window.setNotifications = setNotifications;
-                window.submitVote = submitVote;
-                window.updateVolume = updateVolume;
-
-                // Map input event listener
-                const mapInput = document.getElementById('mapInput');
-                mapInput.addEventListener('input', () => {
-                    const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
-                    const mapSuggestions = document.getElementById('mapSuggestions');
-                    mapSuggestions.innerHTML = ''; // Clear previous suggestions
-
-                    // Display suggestions
-                    suggestions.forEach(map => {
-                        const li = document.createElement('li');
-                        li.textContent = map;
-                        li.onclick = () => {
-                            mapInput.value = map; // Set input value to selected suggestion
-                            mapSuggestions.innerHTML = ''; // Clear suggestions
-                        };
-                        mapSuggestions.appendChild(li);
-                    });
+                // Display suggestions
+                suggestions.forEach(map => {
+                    const li = document.createElement('li');
+                    li.textContent = map;
+                    li.onclick = () => {
+                        mapInput.value = map; // Set input value to selected suggestion MENT
+                        mapSuggestions.innerHTML = ''; // Clear suggestions
+                    };
+                    mapSuggestions.appendChild(li);
                 });
-            }
+            });
         });
 
     </script>
