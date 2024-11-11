@@ -429,23 +429,15 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
  
 
+// Example for anonymous authentication
 async function authenticateUser() {
-    // Check if there's an existing user session
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (!user) {
-        // No user, so sign in anonymously (no email or password)
-        const { data, error: signInError } = await supabase.auth.signIn();
-
-        if (signInError) {
-            console.error('Error signing in anonymously:', signInError);
-            return null;
-        }
-
-        return data.user; // Return the user object
+    const { user, error } = await supabase.auth.signInAnonymously();
+    
+    if (error) {
+        console.error('Authentication error:', error.message);
+    } else {
+        console.log('User authenticated:', user);
     }
-
-    return user; // Return the user if already authenticated
 }
 
 let votedMaps = {};
