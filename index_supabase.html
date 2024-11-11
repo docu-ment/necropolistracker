@@ -431,12 +431,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 
 
-
+let authenticatedUser = null; // Define a global variable
 
 
 let isAuthenticating = false;
 
-// Retry-enabled anonymous authentication function
 async function authenticateUserWithRetry(retries = 3, delay = 1000) {
     if (isAuthenticating) return; // Prevent multiple calls if already in progress
     isAuthenticating = true;
@@ -446,23 +445,28 @@ async function authenticateUserWithRetry(retries = 3, delay = 1000) {
 
         if (error) throw new Error(error.message);
 
-        console.log('User authenticated:', user);
-        isAuthenticating = false; // Reset state after successful authentication
-        return user; // Return the authenticated user data
-
+        authenticatedUser = user; // Store authenticated user globally
+        console.log('Successfully authenticated:', authenticatedUser);
     } catch (error) {
-        isAuthenticating = false; // Reset state in case of an error
-
         if (retries > 0 && error.message.includes('Request rate limit reached')) {
             console.log(`Rate limit reached, retrying in ${delay}ms... (${retries} retries left)`);
-            await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
             return authenticateUserWithRetry(retries - 1, delay); // Retry authentication
         } else {
             console.error('Authentication error:', error.message);
-            return null; // Return null if out of retries or other errors occur
         }
+    } finally {
+        isAuthenticating = false;
     }
 }
+
+authenticateUserWithRetry().then(() => {
+    if (authenticatedUser) {
+        console.log('Authenticated user:', authenticatedUser);
+    } else {
+        console.log('Authentication failed');
+    }
+});
 
 // Call the retry authentication function once and handle the result
 authenticateUserWithRetry().then(async (user) => {
@@ -681,10 +685,8 @@ async function displayVotedMaps() {
         return;
     }
 
-    // Sort the maps by votes in descending order
-    votedMaps.sort((a, b) => b.votes - a.votes); // Sorting from most positive to least votes
+    votedMaps.sort((a, b) => b.votes - a.votes);
 
-    // Loop through the sorted maps and display them
     votedMaps.forEach(map => {
         const modifiersList = map.modifiers.join(', ');
         const listItem = document.createElement('li');
@@ -704,7 +706,6 @@ async function displayVotedMaps() {
         votedMapsList.appendChild(listItem);
     });
 }
-
 
 function getNextHour() {
     const now = new Date();
@@ -743,7 +744,7 @@ async function updateVote(uniqueVoteKey, voteValue) {
     const { data: existingVote, error: voteError } = await supabase
         .from('user_votes')
         .select('vote_type')
-        .eq('user_id', user.id)
+        .eq('user_id', authenticatedUser.id)
         .eq('unique_vote_key', uniqueVoteKey)
         .single();
 
@@ -769,7 +770,7 @@ async function updateVote(uniqueVoteKey, voteValue) {
     // Record the user vote
     const { error: insertError } = await supabase
         .from('user_votes')
-        .insert([{ user_id: user.id, unique_vote_key: uniqueVoteKey, vote_type: voteValue }]);
+        .insert([{ user_id: authenticatedUser.id, unique_vote_key: uniqueVoteKey, vote_type: voteValue }]);
 
     if (insertError) {
         console.error('Error recording user vote:', insertError);
@@ -943,46 +944,39 @@ function updateTabTitle(mapName, upvotes) {
     const mapInput = document.getElementById('mapInput').value.trim();
     const modifiers = Array.from(document.querySelectorAll('input[name="mod"]:checked')).map(input => input.value);
 
-    if (!maps.includes(mapInput) || !modifiers.length) {
-        alert('Please select a valid map and at least one modifier.');
+    if (!authenticatedUser) {
+        alert("You must be authenticated to submit a vote.");
         return;
     }
-
-   
 
     const modifiersKey = modifiers.sort().join('_');
     const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
 
-// Check if the user has already voted (both in session and DB)
-const { data: existingVote, error: voteError } = await supabase
-    .from('user_votes')
-    .select('vote_type')
-    .eq('user_id', user.id)
-    .eq('unique_vote_key', uniqueVoteKey)
-    .single();  // Retrieve a single record
+    // Check if the user has already voted
+    const { data: existingVote, error: voteError } = await supabase
+        .from('user_votes')
+        .select('vote_type')
+        .eq('user_id', authenticatedUser.id) // Use authenticatedUser
+        .eq('unique_vote_key', uniqueVoteKey)
+        .single();
 
-if (voteError && voteError.code !== 'PGRST116') {  // Handle any error except "no rows" error
-    console.error('Error checking existing vote:', voteError);
-    return;
-}
+    if (voteError && voteError.code !== 'PGRST116') {
+        console.error('Error checking existing vote:', voteError);
+        return;
+    }
 
-if (existingVote) {
-    // User has already voted on this unique vote key
-    alert('You have already voted for this combination.');
-    return;  // Prevent further voting
-}
+    if (existingVote) {
+        alert('You have already voted for this combination.');
+        return;
+    }
 
-// Continue with submitting the vote if no existing vote is found
-
-
-    // Update votes in `voted_maps` table
     const { error: voteUpdateError } = await supabase
         .from('voted_maps')
         .upsert([{
             map_name: mapInput,
-            modifiers: modifiers,
+            modifiers,
             unique_vote_key: uniqueVoteKey,
-            votes: 1,  // Always add 1 for each new vote submission
+            votes: 1,
             timestamp: new Date().toISOString()
         }], { onConflict: ['unique_vote_key'] });
 
@@ -992,13 +986,12 @@ if (existingVote) {
         return;
     }
 
-    // Record the user vote in `user_votes`
     const { error: userVoteError } = await supabase
         .from('user_votes')
         .insert([{
-            user_id: user.id,
+            user_id: authenticatedUser.id, // Use authenticatedUser
             unique_vote_key: uniqueVoteKey,
-            vote_type: 1  // Record the upvote
+            vote_type: 1
         }]);
 
     if (userVoteError) {
@@ -1010,7 +1003,6 @@ if (existingVote) {
     alert(`Vote submitted for ${mapInput}!`);
     displayVotedMaps();
 
-    // Reset form fields
     document.querySelectorAll('input[name="mod"]:checked').forEach(checkbox => {
         checkbox.checked = false;
     });
