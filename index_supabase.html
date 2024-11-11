@@ -446,8 +446,18 @@ async function authenticateUser() {
     }
 }
 
+// Check the current user using the updated method
+const currentUser = supabase.auth.getUser();
+
+if (currentUser) {
+    console.log('Current authenticated user:', currentUser);
+} else {
+    console.log('No authenticated user');
+}
+
 // Call authenticateUser to test
 authenticateUser();
+
 
 
 
