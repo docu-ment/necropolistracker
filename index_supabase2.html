@@ -578,7 +578,7 @@ let notificationSettings = {
 
 
 // Reference the 'votes' table
-const ref = supabase.from('votes');
+const ref = supabase.from('user_votes');
 
 
 
@@ -678,7 +678,7 @@ const votesSubscription = supabase
         
         // Fetch all votes from Supabase
 async function loadVotesFromSupabase() {
-        const { data, error } = await supabase.from('votes').select('*').order('timestamp', { ascending: false });
+        const { data, error } = await supabase.from('voted_maps').select('*').order('timestamp', { ascending: false });
         if (error) {
             console.error('Error loading votes:', error);
             return;
