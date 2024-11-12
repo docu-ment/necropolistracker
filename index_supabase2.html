@@ -730,23 +730,25 @@ async function displayVotedMaps() {
     votedMaps.sort((a, b) => b.votes - a.votes);
 
     votedMaps.forEach(map => {
-        const modifiersList = map.modifiers.join(', ');
-        const listItem = document.createElement('li');
-        listItem.className = 'voted-map-entry';
-        listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Votes: ${map.votes}`;
+    const modifiersList = map.modifiers.join(', ');
+    const listItem = document.createElement('li');
+    listItem.className = 'voted-map-entry';
+    
+    listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Watchstones: ${map.watchstones || 0} | Votes: ${map.votes}`;
 
-        const upvoteButton = document.createElement('button');
-        upvoteButton.textContent = 'Upvote';
-        upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
+    const upvoteButton = document.createElement('button');
+    upvoteButton.textContent = 'Upvote';
+    upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
 
-        const downvoteButton = document.createElement('button');
-        downvoteButton.textContent = 'Downvote';
-        downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
+    const downvoteButton = document.createElement('button');
+    downvoteButton.textContent = 'Downvote';
+    downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
 
-        listItem.appendChild(upvoteButton);
-        listItem.appendChild(downvoteButton);
-        votedMapsList.appendChild(listItem);
-    });
+    listItem.appendChild(upvoteButton);
+    listItem.appendChild(downvoteButton);
+    votedMapsList.appendChild(listItem);
+});
+
 }
 
 function getNextHour() {
@@ -782,6 +784,11 @@ async function updateVote(uniqueVoteKey, voteValue) {
         return;
     }
 
+    if (!uniqueVoteKey) {
+        console.error("uniqueVoteKey is undefined.");
+        return;
+    }
+
     // Check if the user has already voted
     const { data: existingVote, error: voteError } = await supabase
         .from('user_votes')
@@ -790,7 +797,7 @@ async function updateVote(uniqueVoteKey, voteValue) {
         .eq('unique_vote_key', uniqueVoteKey)
         .single();  // Retrieve a single record
 
-    if (voteError) {
+    if (voteError && voteError.code !== 'PGRST116') {
         console.error('Error checking existing vote:', voteError);
         return;
     }
@@ -824,6 +831,7 @@ async function updateVote(uniqueVoteKey, voteValue) {
         displayVotedMaps();
     }
 }
+
 
 
 
@@ -981,6 +989,9 @@ function updateTabTitle(mapName, upvotes) {
     const mapInput = document.getElementById('mapInput').value.trim();
     const modifiers = Array.from(document.querySelectorAll('input[name="mod"]:checked')).map(input => input.value);
 
+    // Retrieve the selected watchstones value
+    const watchstones = document.querySelector('input[name="watchstones"]:checked').value;
+
     // Ensure user is authenticated
     if (!authenticatedUser || !authenticatedUser.id) {
         alert("You must be authenticated to submit a vote.");
@@ -994,9 +1005,9 @@ function updateTabTitle(mapName, upvotes) {
     const { data: existingVote, error: voteError } = await supabase
         .from('user_votes')
         .select('vote_type')
-        .eq('user_id', authenticatedUser.id) // Use authenticatedUser.id
+        .eq('user_id', authenticatedUser.id)
         .eq('unique_vote_key', uniqueVoteKey)
-        .single(); // Retrieve a single record
+        .single();
 
     if (voteError && voteError.code !== 'PGRST116') {
         console.error('Error checking existing vote:', voteError);
@@ -1017,7 +1028,8 @@ function updateTabTitle(mapName, upvotes) {
             unique_vote_key: uniqueVoteKey,
             votes: 1,
             timestamp: new Date().toISOString(),
-            user_id: authenticatedUser.id // Ensure user_id is included
+            user_id: authenticatedUser.id,
+            watchstones: parseInt(watchstones) // Ensure watchstones value is saved as an integer
         }], { onConflict: ['unique_vote_key'] });
 
     if (voteUpdateError) {
@@ -1030,9 +1042,9 @@ function updateTabTitle(mapName, upvotes) {
     const { error: userVoteError } = await supabase
         .from('user_votes')
         .insert([{
-            user_id: authenticatedUser.id, // Link the vote to the authenticated user
+            user_id: authenticatedUser.id,
             unique_vote_key: uniqueVoteKey,
-            vote_type: 1 // Upvote
+            vote_type: 1
         }]);
 
     if (userVoteError) {
@@ -1049,6 +1061,7 @@ function updateTabTitle(mapName, upvotes) {
         checkbox.checked = false;
     });
     document.getElementById('mapInput').value = '';
+    document.querySelector('input[name="watchstones"][value="0"]').checked = true; // Reset to default watchstone selection
 }
 
   
