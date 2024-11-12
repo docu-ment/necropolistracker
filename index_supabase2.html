@@ -705,7 +705,7 @@ async function confirmVote(mapInput, modifiers) {
         created_at: new Date().toISOString()
     };
 
-    const { error } = await supabase.from('votes').upsert(voteData);
+    const { error } = await supabase.from('voted_maps').upsert(voteData);
     if (error) {
         console.error('Error uploading data:', error);
     } else {
@@ -830,7 +830,7 @@ async function updateVote(uniqueVoteKey, voteValue) {
 async function getVotes(mapName, modifiers) {
     try {
         const { data, error } = await supabase
-            .from('votes')
+            .from('voted_maps')
             .select('votes, downvotes, timestamp')
             .eq('map_name', mapName)  // Query by map name
             .contains('modifiers', modifiers)  // Match by modifiers
@@ -879,16 +879,6 @@ function updateVotedMapsDisplay(data) {
 }
 
 
-// Delete a map if it gets too many downvotes
-async function deleteMap(mapId) {
-        const { error } = await supabase.from('votes').delete().eq('map_name', mapId);
-        if (error) {
-            console.error("Error deleting map:", error);
-        } else {
-            console.log(`Map ${mapId} deleted due to too many downvotes.`);
-            loadVotesFromSupabase();  // Refresh the voted maps display
-        }
-}
 
 const notifiedMaps = {};
 
