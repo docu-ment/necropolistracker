@@ -587,7 +587,7 @@ let lastKnownMaps = new Set();
 
 // Subscribe to changes (inserts and deletes)
 const votesSubscription = supabase
-    .channel('votes')
+    .channel('voted_maps')
     .on('postgres_changes', {
         event: 'INSERT',  // Detect new listings
         schema: 'public',
