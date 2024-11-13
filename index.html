@@ -211,7 +211,7 @@
 <!-- Reddit Share Link Section -->
 <div style="margin-top: 20px; text-align: center;">
     <a href="https://www.reddit.com/r/pathofexile/comments/1gls1yb/necropolis_tracker_for_325_settlers_of_kalguur/" target="_blank" style="font-size: 18px; padding: 10px 20px; border: 2px solid #0070ba; background-color: #f7f7f7; color: #0070ba; text-decoration: none; cursor: pointer; border-radius: 5px;">
-       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken
+       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken. Blocking false reports in the future.
     </a>
 </div>
 
@@ -978,6 +978,23 @@ function updateTabTitle(mapName, upvotes) {
     // Ensure user is authenticated
     if (!authenticatedUser || !authenticatedUser.id) {
         alert("You must be authenticated to submit a vote.");
+        return;
+    }
+
+    // Check if the user is blocked
+    const { data: isBlocked, error: blockCheckError } = await supabase
+        .from('blocked_users')
+        .select('user_id')
+        .eq('user_id', authenticatedUser.id)
+        .single();
+
+    if (blockCheckError && blockCheckError.code !== 'PGRST116') {
+        console.error('Error checking blocked status:', blockCheckError);
+        return;
+    }
+
+    if (isBlocked) {
+        alert("Only submit truthful combinations.");
         return;
     }
 
