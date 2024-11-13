@@ -215,10 +215,14 @@
     </a>
 </div>
 
-            <h2>Notification Settings</h2>
-            <p>Select mod to be notified about:</p>
-            <form id="notificationForm">
-                <div class="form-row">
+<h2>Notification Settings</h2>
+<button onclick="toggleNotificationSettings()">Notification Settings hidden until fixed</button>
+
+<div id="notificationSettings" style="display: none;">
+    <p>Select mod to be notified about:</p>
+    <form id="notificationForm">
+        <!-- Notification Settings Content (Checkboxes and Controls) -->
+        <div class="form-row">
                     <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
                     <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
                     <label><input type="checkbox" value="seer" id="seerCheckbox"> Seer</label>
@@ -280,9 +284,7 @@
                     Enable Notifications
                 </label>
     
-               
                 <button type="button" id="set-notifications-button">Set Notifications</button>
-
                 <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
             </form>
         </section>
@@ -532,6 +534,14 @@ let notificationSettings = {
 };
 
 
+function toggleNotificationSettings() {
+        const settingsDiv = document.getElementById('notificationSettings');
+        if (settingsDiv.style.display === "none") {
+            settingsDiv.style.display = "block";
+        } else {
+            settingsDiv.style.display = "none";
+        }
+    }
 
 
 
