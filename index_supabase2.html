@@ -476,96 +476,54 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 let authenticatedUser = null; // Define a global variable
 
 
-let isAuthenticating = false;
 
-async function authenticateUserWithRetry(retries = 3, delay = 1000) {
-    if (isAuthenticating) return; // Prevent multiple calls if already in progress
-    isAuthenticating = true;
+async function initializeAuthentication() {
+    // Check if there's already a user ID stored in localStorage
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+        // Attempt to get the current session or user info
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+            console.error('Error retrieving current user:', error.message);
+        } else if (user) {
+            authenticatedUser = user; // Set the authenticated user from session
+            console.log('Retrieved authenticated user ID from localStorage:', authenticatedUser);
+            return;
+        }
+    }
 
+    // If no stored user or session is found, authenticate as a new anonymous user
     try {
         const { data: { user }, error } = await supabase.auth.signInAnonymously();
-
         if (error) throw new Error(error.message);
 
         authenticatedUser = user; // Store authenticated user globally
         console.log('Successfully authenticated:', authenticatedUser);
+        localStorage.setItem('userId', authenticatedUser.id); // Save user ID to localStorage
     } catch (error) {
-        if (retries > 0 && error.message.includes('Request rate limit reached')) {
-            console.log(`Rate limit reached, retrying in ${delay}ms... (${retries} retries left)`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return authenticateUserWithRetry(retries - 1, delay); // Retry authentication
-        } else {
-            console.error('Authentication error:', error.message);
-        }
-    } finally {
-        isAuthenticating = false;
-    }
-}
-
-authenticateUserWithRetry().then(() => {
-    if (authenticatedUser) {
-        console.log('Authenticated user:', authenticatedUser);
-    } else {
-        console.log('Authentication failed');
-    }
-});
-
-// Call the retry authentication function once and handle the result
-authenticateUserWithRetry().then(async (user) => {
-    if (user) {
-        console.log('Successfully authenticated:', user);
-        const currentUser = await checkCurrentUser(); // Check and log the current user
-        if (currentUser) {
-            console.log('Confirmed current user:', currentUser);
-        } else {
-            console.log('No current authenticated user found');
-        }
-    } else {
-        console.log('Authentication failed');
-    }
-});
-
-
-async function checkCurrentUser() {
-    const { data: { user: currentUser }, error } = await supabase.auth.getUser();
-
-    if (error) {
-        console.error('Error retrieving current user:', error.message);
-        return null;
-    }
-
-    if (currentUser) {
-        console.log('Current authenticated user:', currentUser); // Log user if authenticated
-        return currentUser;
-    } else {
-        console.log('No authenticated user');
-        return null;
+        console.error('Authentication error:', error.message);
     }
 }
 
 
+initializeAuthentication();
 
-
-// Check the current user using the updated method
-const currentUser = supabase.auth.getUser();
-
-if (currentUser) {
-    console.log('Current authenticated user:', currentUser);
-} else {
-    console.log('No authenticated user');
-}
-
-
+window.submitVote = submitVote;
 
 let votedMaps = {};
        
 let userVotes = {};
 let userId = localStorage.getItem('userId');
-if (!userId) {
-    userId = `user-${Math.random().toString(36).substr(2, 9)}`; // Generate a simple unique ID
+if (!userId && authenticatedUser?.id) {
+    userId = authenticatedUser.id;
+    localStorage.setItem('userId', userId);
+} else if (!userId) {
+    // For non-authenticated users or demo purposes, generate a fallback ID
+    userId = `user-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('userId', userId);
 }
 console.log("User ID:", userId);
+
 
 let notificationSettings = {
         mods: [], // Array of selected mods PROPERTY
@@ -694,6 +652,14 @@ async function loadVotesFromSupabase() {
 }
 
 
+function getSelectedModifiers() {
+    const modifiers = [];
+    document.querySelectorAll('input[name="mod"]:checked').forEach((checkbox) => {
+        modifiers.push(checkbox.value);
+    });
+    return modifiers.join(', ');
+}
+
 
 
 async function confirmVote(mapInput, modifiers) {
@@ -714,6 +680,7 @@ async function confirmVote(mapInput, modifiers) {
     }
 }
 
+
 async function displayVotedMaps() {
     const votedMapsList = document.getElementById('votedMapsList');
     votedMapsList.innerHTML = ''; // Clear existing list
@@ -729,27 +696,46 @@ async function displayVotedMaps() {
 
     votedMaps.sort((a, b) => b.votes - a.votes);
 
-    votedMaps.forEach(map => {
-    const modifiersList = map.modifiers.join(', ');
-    const listItem = document.createElement('li');
-    listItem.className = 'voted-map-entry';
-    
-    listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Watchstones: ${map.watchstones || 0} | Votes: ${map.votes}`;
+    for (const map of votedMaps) {
+        const { data: existingVote } = await supabase
+            .from('user_votes')
+            .select('vote_type')
+            .eq('user_id', authenticatedUser.id)
+            .eq('unique_vote_key', map.unique_vote_key)
+            .single();
 
-    const upvoteButton = document.createElement('button');
-    upvoteButton.textContent = 'Upvote';
-    upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
+        const modifiersList = map.modifiers.join(', ');
+        const listItem = document.createElement('li');
+        listItem.className = 'voted-map-entry';
+        listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Votes: ${map.votes}`;
 
-    const downvoteButton = document.createElement('button');
-    downvoteButton.textContent = 'Downvote';
-    downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
+        if (!existingVote) {
+            // User hasn't voted yet; show buttons
+            const upvoteButton = document.createElement('button');
+            upvoteButton.textContent = 'Upvote';
+            upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
 
-    listItem.appendChild(upvoteButton);
-    listItem.appendChild(downvoteButton);
-    votedMapsList.appendChild(listItem);
-});
+            const downvoteButton = document.createElement('button');
+            downvoteButton.textContent = 'Downvote';
+            downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
 
+            listItem.appendChild(upvoteButton);
+            listItem.appendChild(downvoteButton);
+        } else {
+            // User has already voted; show a message or disable voting
+            const votedMessage = document.createElement('span');
+            votedMessage.textContent = ' You have already voted on this map.';
+            listItem.appendChild(votedMessage);
+        }
+
+        votedMapsList.appendChild(listItem);
+    }
 }
+
+
+
+
+
 
 function getNextHour() {
     const now = new Date();
@@ -982,6 +968,17 @@ function updateTabTitle(mapName, upvotes) {
     }
 
 
+    const voteData = {
+    map_name: mapName,
+    modifiers: modifiers,
+    unique_vote_key: uniqueVoteKey,
+    votes: 1, // Assuming each submission is an upvote
+    timestamp: timestamp,
+    user_id: userId,
+    watchstones: watchstones,
+    vote_type: 1 // Explicitly setting it to 1 for an upvote
+};
+
 
         let modifiers = [];
 
@@ -1026,7 +1023,7 @@ function updateTabTitle(mapName, upvotes) {
             map_name: mapInput,
             modifiers,
             unique_vote_key: uniqueVoteKey,
-            votes: 1,
+            votes: 1,  // Initial vote set as 1
             timestamp: new Date().toISOString(),
             user_id: authenticatedUser.id,
             watchstones: parseInt(watchstones) // Ensure watchstones value is saved as an integer
@@ -1044,7 +1041,7 @@ function updateTabTitle(mapName, upvotes) {
         .insert([{
             user_id: authenticatedUser.id,
             unique_vote_key: uniqueVoteKey,
-            vote_type: 1
+            vote_type: 1  // Vote type set to 1 for an upvote
         }]);
 
     if (userVoteError) {
@@ -1064,7 +1061,7 @@ function updateTabTitle(mapName, upvotes) {
     document.querySelector('input[name="watchstones"][value="0"]').checked = true; // Reset to default watchstone selection
 }
 
-  
+
 
         function searchMap() {
             const input = document.getElementById('mapInput').value.toLowerCase();
@@ -1171,17 +1168,54 @@ function showBackgroundNotification() {
     }
 }
 
+function setupMapInputSuggestions(mapInput) {
+    mapInput.addEventListener('input', () => {
+        const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
+        const mapSuggestions = document.getElementById('mapSuggestions');
+        mapSuggestions.innerHTML = ''; // Clear previous suggestions
+
+        // Display suggestions
+        suggestions.forEach(map => {
+            const li = document.createElement('li');
+            li.textContent = map;
+            li.onclick = () => {
+                mapInput.value = map; // Set input value to selected suggestion
+                mapSuggestions.innerHTML = ''; // Clear suggestions
+            };
+            mapSuggestions.appendChild(li);
+        });
+    });
+}
+
+
+
 document.addEventListener('DOMContentLoaded', async () => {
-            const timerDisplay = document.getElementById('timerDisplay');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const modifiers = document.getElementById('modifiersInput')?.value;
 
-            const user = await authenticateUserWithRetry();
+    await initializeAuthentication();
+
+    if (authenticatedUser) {
+        console.log('User authenticated:', authenticatedUser);
+
+        loadVotesFromSupabase();
+        checkNotificationPermission(); // Check if notifications are enabled
+
+        // Expose functions to the global scope
+        window.setNotifications = setNotifications;
+        window.submitVote = submitVote;
+        window.updateVolume = updateVolume;
+
+        // Setup map input suggestion listener
+        const mapInput = document.getElementById('mapInput');
+        if (mapInput) {
+            setupMapInputSuggestions(mapInput);
+        }
+    } else {
+        console.log('User not authenticated');
+    }
             
-            if (user) {
-                console.log('Authenticated user:', user);
-            } else {
-                console.log('No authenticated user');
-            }
-
+          
             if (timerDisplay) {
                 // Your other functions
                 loadVotesFromSupabase();
