@@ -984,6 +984,17 @@ function updateTabTitle(mapName, upvotes) {
         return;
     }
 
+    // Check if map name and at least one modifier are selected
+    if (!mapInput) {
+        alert("Please enter a map name.");
+        return;
+    }
+    
+    if (modifiers.length === 0) {
+        alert("Please select at least one modifier.");
+        return;
+    }
+
     const modifiersKey = modifiers.sort().join('_');
     const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
 
@@ -1049,7 +1060,6 @@ function updateTabTitle(mapName, upvotes) {
     document.getElementById('mapInput').value = '';
     document.querySelector('input[name="watchstones"][value="0"]').checked = true; // Reset to default watchstone selection
 }
-
 
 
         function searchMap() {
