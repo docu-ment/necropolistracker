@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Necropolis Tracker</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="cookies.js" defer></script>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <script src="index.obfuscated.js" ></script>
+
+    
+    <style>
+        /* Basic reset for a dark theme */
+        body {
+            background-color: #121212; /* Dark background */
+            color: white; /* Light text */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 50;
+            margin-left: 50px;
+        }
+    
+        h1, h2 {
+            color: #e0e0e0; /* Lighter text for headers */
+        }
+    
+        .highlight {
+            background-color: yellow; /* Change to any color you like */
+            font-weight: bold;
+        }
+    
+        .container {
+            padding: 10px;
+        }
+    
+        .form-row {
+            margin-bottom: 15px;
+        }
+    
+        .notification-status {
+            margin-left: 10px;
+            font-style: italic;
+            color: #ccc; /* Light gray color for status text */
+        }
+    
+        .voted-map-entry {
+            margin: 10px 0;
+            background-color: #333; /* Dark background for map entries */
+            padding: 10px;
+            border-radius: 5px;
+            width: 50%; /* Reduced width for voted map entries */
+            text-align: center;
+        }
+    
+        .timer {
+            font-weight: bold;
+            margin-left: 10px;
+            color: #ffff00; /* Yellow for the timer, more accessible */
+        }
+    
+        .vote-buttons {
+            display: inline-block;
+            margin-left: 15px;
+        }
+    
+        .vote-count {
+            margin-left: 5px;
+        }
+    
+        #mapSuggestions {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #444; /* Dark border */
+            max-height: 250px;
+            overflow-y: auto;
+            position: absolute; /* Ensure suggestions are positioned correctly */
+            z-index: 2000; /* Make sure suggestions appear above other content */
+            background-color: #222; /* Dark background for suggestions */
+        }
+    
+        #mapSuggestions li {
+            padding: 11px;
+            cursor: pointer;
+            color: white; /* White text for suggestions */
+        }
+    
+        #mapSuggestions li:hover {
+            background-color: #444; /* Dark hover effect */
+        }
+    
+        .voted-maps-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #e0e0e0;
+        }
+    
+        label {
+            color: #ccc; /* Light gray color for labels */
+        }
+    
+        button {
+            background-color: #444; /* Dark button background */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        button:hover {
+            background-color: #666; /* Lighter background on hover */
+        }
+    
+        input[type="text"], input[type="number"], input[type="range"] {
+            background-color: #333; /* Dark input background */
+            color: white; /* White text for input */
+            border: 1px solid #555; /* Slightly lighter border */
+            padding: 5px;
+            border-radius: 1px;
+        }
+    
+        input[type="text"]:focus, input[type="number"]:focus, input[type="range"]:focus {
+            border-color: #888; /* Highlight border color when focused */
+        }
+    
+        /* For the notification volume range */
+        #volumeValue {
+            color: #ccc;
+        }
+    
+        .form-row label {
+            margin-right: 0px;
+        }
+    
+        .cookie-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(51, 51, 51, 0.9); /* Semi-transparent dark overlay */
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        z-index: 1000; /* Ensure it overlays all content */
+        pointer-events: auto;
+    }
+
+    .cookie-banner button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .cookie-banner button:hover {
+        background-color: #45a049;
+    }
+    
+        .privacy-link {
+            color: #4CAF50;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+    
+        .privacy-link:hover {
+            color: #45a049;
+        }
+    
+        /* Make the map name input field bigger */
+        #mapInput {
+            width: 100%;  /* Make the input take the full width */
+            height: 50px; /* Increase height */
+            font-size: 18px; /* Larger text for better readability */
+            padding: 10px; /* More padding for a larger feel */
+            border-radius: 5px; /* Rounded corners */
+        }
+    
+        /* Position the 'Confirm' button at the bottom of the form */
+        #modForm {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            max-width: 51%; /* Set form width to 50% of parent container */
+            height: 0px; /* Adjust form height */
+        }
+  
+       /* Ensure the confirm button stays at the bottom */
+        button[type="button"] {
+            margin-top: auto;  /* Push button to the bottom */
+        }
+    </style>
+    
+    <body>
+        <section>
+            <!-- Cookie banner -->
+            <div id="cookies-banner" style="display:none;">
+                <p>We use cookies to improve your experience. <button id="accept-cookies">Accept Cookies</button></p>
+            </div>
+    
+            <h1>Necropolis Tracker: Settlers of Kalguur</h1>
+
+<!-- Reddit Share Link Section -->
+<div style="margin-top: 20px; text-align: center;">
+    <a href="https://www.reddit.com/r/pathofexile/comments/1gls1yb/necropolis_tracker_for_325_settlers_of_kalguur/" target="_blank" style="font-size: 18px; padding: 10px 20px; border: 2px solid #0070ba; background-color: #f7f7f7; color: #0070ba; text-decoration: none; cursor: pointer; border-radius: 5px;">
+       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken, working on adding watchstones & monster type settings next
+    </a>
+</div>
+
+            <h2>Notification Settings</h2>
+            <p>Select mod to be notified about:</p>
+            <form id="notificationForm">
+                <div class="form-row">
+                    <label><input type="checkbox" value="exp" id="expCheckbox"> Exp</label>
+                    <label><input type="checkbox" value="divine orbs" id="divineOrbsCheckbox"> Divine Orbs</label>
+                    <label><input type="checkbox" value="seer" id="seerCheckbox"> Seer</label>
+                    <label><input type="checkbox" value="quantity" id="quantityCheckbox"> Quantity</label>
+                    <label><input type="checkbox" value="quantity of strongest" id="quantityStrongestCheckbox"> Quantity of Strongest</label>
+                    <label><input type="checkbox" value="possessed" id="possessedCheckbox"> Possessed</label>
+                    <label><input type="checkbox" value="convert to magic packs" id="convertMagicPacksCheckbox"> Convert to Magic Packs</label>
+                    <label><input type="checkbox" value="maps" id="mapsCheckbox"> Maps</label>
+                    
+                    <p></p>
+                    <label><input type="checkbox" value="packsize" id="packsizeCheckbox"> Packsize</label>
+                    <label><input type="checkbox" value="scarabs" id="scarabsCheckbox"> Scarabs</label>
+                    <label><input type="checkbox" value="chisel" id="chiselCheckbox"> Chisel</label>
+                    <label><input type="checkbox" value="rarity" id="rarityCheckbox"> Rarity</label>
+                    <label><input type="checkbox" value="rarity of strongest" id="rarityStrongestCheckbox"> Rarity of Strongest</label>
+                    <label><input type="checkbox" value="exalted orb" id="exaltedOrbCheckbox"> Exalted Orb</label>
+                    <label><input type="checkbox" value="annulment orb" id="annulmentOrbCheckbox"> Annulment Orb</label>
+                    <label><input type="checkbox" value="chaos orb" id="chaosOrbCheckbox"> Chaos Orb</label>
+                    
+                    <p></p>
+                    <label><input type="checkbox" value="regal orb" id="regalOrbCheckbox"> Regal Orb</label>
+                    <label><input type="checkbox" value="unmaking" id="unmakingCheckbox"> Unmaking</label>
+                    <label><input type="checkbox" value="horizon" id="horizonCheckbox"> Horizon</label>
+                    <label><input type="checkbox" value="gemcutter" id="gemcutterCheckbox"> Gemcutter</label>
+                    <label><input type="checkbox" value="glassblower" id="glassblowerCheckbox"> Glassblower</label>
+                    <label><input type="checkbox" value="regret" id="regretCheckbox"> Regret</label>
+                    <label><input type="checkbox" value="instilling" id="instillingCheckbox"> Instilling</label>
+                    <label><input type="checkbox" value="enkindling" id="enkindlingCheckbox"> Enkindling</label>
+                    <label><input type="checkbox" value="vaal orbs" id="vaalOrbsCheckbox"> Vaal Orbs</label>
+                    
+                    <p></p>
+                    <label><input type="checkbox" value="blessed orbs" id="blessedOrbsCheckbox"> Blessed Orbs</label>
+                    <label><input type="checkbox" value="accomp map boss" id="accompMapBossCheckbox"> Accompanied by Map Boss</label>
+                    <label><input type="checkbox" value="accomp rogue" id="accompRogueCheckbox"> Accompanied by Rogue Exile</label>
+                    <label><input type="checkbox" value="corrupting tempest" id="corruptingTempestCheckbox"> Corrupting Tempest</label>
+                    <label><input type="checkbox" value="harbinger" id="harbingerCheckbox"> Harbinger</label>
+                    <p>Allflames</p>
+                    <label><input type="checkbox" value="meatsacks" id="meatsacksCheckbox"> Meatsacks</label>
+                    <label><input type="checkbox" value="frogs" id="frogCheckbox"> Frogs</label>
+                    <label><input type="checkbox" value="rats" id="ratsCheckbox"> Rats</label>
+                    <label><input type="checkbox" value="gemlings" id="gemlingsCheckbox"> Gemlings</label>
+                    <label><input type="checkbox" value="scarab" id="scarabCheckbox"> Scarab</label>
+                    <label><input type="checkbox" value="fracture" id="fractureCheckbox"> Fracture</label>
+                    <label><input type="checkbox" value="shaper" id="shaperCheckbox"> Shaper</label>
+                    <label><input type="checkbox" value="exiles" id="exilesCheckbox"> Exiles</label>
+                    <label><input type="checkbox" value="wealthy" id="wealthyCheckbox"> Wealthy</label>
+
+
+                </div>
+    
+                <div class="form-row">
+                    <label for="upvoteThreshold">Upvotes required for notification:</label>
+                    <input type="number" id="upvoteThreshold" min="0" value="1" step="1">
+                    <label for="volumeControl"> Volume: <span id="volumeValue">50%</span></label>
+                    <input type="range" id="volumeControl" min="0" max="100" value="50" step="10" oninput="updateVolume()">
+                </div>
+                <label>
+                    <input type="checkbox" id="enable-notifications" />
+                    Enable Notifications
+                </label>
+    
+               
+                <button type="button" id="set-notifications-button">Set Notifications</button>
+
+                <span id="notificationStatus" class="notification-status">Currently no notification saved.</span>
+            </form>
+        </section>
+    
+        <section>
+            <h2 class="voted-maps-header">
+                <div>
+                    <span>Voted Maps</span>
+                    <span id="timerDisplay">2:22</span>
+                </div>
+            </h2>
+    
+            <div id="votedMaps">
+                <ul id="votedMapsList"></ul>
+            </div>
+        </section>
+    
+        <section>
+            <h2>Select Map and Modifiers</h2>
+     
+                <div class="form-row">
+                <p>Select Modifiers:</p>
+                <label><input type="checkbox" name="mod" value="exp"> Exp</label>
+                <label><input type="checkbox" name="mod" value="divine orbs"> Divine Orbs</label>
+                <label><input type="checkbox" name="mod" value="seer"> Seer</label>
+                <label><input type="checkbox" name="mod" value="quantity"> Quantity</label>
+                <label><input type="checkbox" name="mod" value="quantity of strongest"> Quantity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="possessed"> Possessed</label>
+                <label><input type="checkbox" name="mod" value="convert to magic packs"> Convert to Magic Packs</label>
+                <label><input type="checkbox" name="mod" value="maps"> Maps</label>
+                <p></p>
+                <label><input type="checkbox" name="mod" value="packsize"> Packsize</label>
+                <label><input type="checkbox" name="mod" value="scarabs"> Scarabs</label>
+                <label><input type="checkbox" name="mod" value="chisel"> Chisel</label>
+                <label><input type="checkbox" name="mod" value="rarity"> Rarity</label>
+                <label><input type="checkbox" name="mod" value="rarity of strongest"> Rarity of Strongest</label>
+                <label><input type="checkbox" name="mod" value="exalted orb"> Exalted Orb</label>
+                <label><input type="checkbox" name="mod" value="annulment orb"> Annulment Orb</label>
+                <label><input type="checkbox" name="mod" value="chaos orb"> Chaos Orb</label>
+                   
+                <p></p>  
+                <label><input type="checkbox" name="mod" value="regal orb"> Regal Orb</label>        
+                <label><input type="checkbox" name="mod" value="unmaking"> Unmaking</label>
+                <label><input type="checkbox" name="mod" value="horizon"> Horizon</label>
+                <label><input type="checkbox" name="mod" value="gemcutter"> Gemcutter</label>
+                <label><input type="checkbox" name="mod" value="glassblower"> Glassblower</label>
+                <label><input type="checkbox" name="mod" value="regret"> Regret</label>
+                <label><input type="checkbox" name="mod" value="instilling"> Instilling</label>
+                <label><input type="checkbox" name="mod" value="enkindling"> Enkindling</label>
+                <label><input type="checkbox" name="mod" value="vaal orbs"> Vaal Orbs</label>
+                <p></p>
+                <label><input type="checkbox" name="mod" value="blessed orbs"> Blessed Orbs</label>
+                
+                <label><input type="checkbox" name="mod" value="accomp map boss"> Accompanied by Map Boss</label>
+                <label><input type="checkbox" name="mod" value="accomp rogue"> Accompanied by Rogue</label>
+                <label><input type="checkbox" name="mod" value="corrupting tempest"> Corrupting Tempest</label>
+                <label><input type="checkbox" name="mod" value="harbinger"> Harbinger</label>
+                <p>Allflames</p>
+                <label><input type="checkbox" name="mod" value="meatsacks"> Meatsacks</label>
+                <label><input type="checkbox" name="mod" value="frogs"> Frogs</label>
+                <label><input type="checkbox" name="mod" value="rats"> Rats</label>
+                <label><input type="checkbox" name="mod" value="gemlings"> Gemlings</label>
+                <label><input type="checkbox" name="mod" value="scarab"> Scarab</label>
+                <label><input type="checkbox" name="mod" value="fracture"> Fracture</label>
+                <label><input type="checkbox" name="mod" value="shaper"> Shaper</label>
+                <label><input type="checkbox" name="mod" value="exiles"> Exiles</label>
+                <label><input type="checkbox" name="mod" value="wealthy"> Wealthy</label>
+
+                <p></p>
+                <p>Watchstones</p>
+                <div id="watchstoneToggle">
+                    <label><input type="radio" name="watchstones" value="0" checked> 0</label>
+                    <label><input type="radio" name="watchstones" value="1"> 1</label>
+                    <label><input type="radio" name="watchstones" value="2"> 2</label>
+                    <label><input type="radio" name="watchstones" value="3"> 3</label>
+                    <label><input type="radio" name="watchstones" value="4"> 4</label>
+                </div>
+
+                <!-- Modifier Groups -->
+<p>Modifier Groups</p>
+
+<!-- Group 1 -->
+<fieldset>
+    <legend>Group 1</legend>
+    <label><input type="checkbox" name="mod" value="abomination"> Abomination</label>
+    <label><input type="checkbox" name="mod" value="animals"> Animals</label>
+    <label><input type="checkbox" name="mod" value="cultists"> Cultists</label>
+    <label><input type="checkbox" name="mod" value="ghosts"> Ghosts</label>
+    <label><input type="checkbox" name="mod" value="humanoids"> Humanoids</label>
+    <label><input type="checkbox" name="mod" value="lunaris_fanatics"> Lunaris Fanatics</label>
+    <label><input type="checkbox" name="mod" value="sea_witches"> Sea Witches</label>
+    <label><input type="checkbox" name="mod" value="skeletons"> Skeletons</label>
+    <label><input type="checkbox" name="mod" value="solaris_fanatics"> Solaris Fanatics</label>
+    <label><input type="checkbox" name="mod" value="undead"> Undead</label>
+</fieldset>
+
+<!-- Group 2 -->
+<fieldset>
+    <legend>Group 2</legend>
+    <label><input type="checkbox" name="mod" value="goatmen"> Goatmen</label>
+    <label><input type="checkbox" name="mod" value="demons"> Demons</label>
+</fieldset>
+
+<!-- Group ??? -->
+<fieldset>
+    <legend>Other Modifiers</legend>
+    <label><input type="checkbox" name="mod" value="monster_variety"> Monster Variety</label>
+    <label><input type="checkbox" name="mod" value="ranged_monsters"> Ranged Monsters</label>
+</fieldset>
+
+                <!-- Map Voting Form Section -->
+<form id="modForm" style="margin-bottom: 110px;">
+    <div>
+        <input type="text" id="mapInput" placeholder="Enter map name" />
+    </div>
+    <ul id="mapSuggestions"></ul>
+
+    <button type="button" onclick="submitVote()">Confirm</button>
+</form>
+
+<!-- Tutorial Section with Left Alignment and Inline Donation Button -->
+<div style="margin-top: 50px; display: flex; align-items: flex-start; padding-left: 30px;">
+    <!-- Video Tutorial Section -->
+    <div style="margin-right: 0px;">
+        <h3 style="margin-top: 0;">Tutorial</h3>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/9wU8kUr5Bgo" title="Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+
+    <!-- Donation Button Section -->
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <!-- Centered Text Above the Button -->
+       
+        <form onsubmit="openPaypalPopup(event)" method="post">
+            <input type="hidden" name="hosted_button_id" value="MDY3YJJAM5KLN">
+            <input type="hidden" name="business" value="franklyinvestor@gmail.com">
+            <input type="hidden" name="currency_code" value="EUR">
+            <input type="submit" value="Donate with PayPal" class="paypal-button" style="font-size: 18px; padding: 15px 30px; border: none; background-color: #0070ba; color: white; cursor: pointer;">
+            <p style="font-size: 18px; margin-bottom: 10px; text-align: center;">Support the development-, server- & software-costs by making a donation!</p>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPaypalPopup(event) {
+    event.preventDefault(); // Prevent the default form submission
+    // Open PayPal link in a new, smaller window
+    window.open(
+        "https://www.paypal.com/donate?hosted_button_id=MDY3YJJAM5KLN&business=franklyinvestor@gmail.com&currency_code=EUR",
+        "PayPal Donation",
+        "width=600,height=700"
+    );
+}
+</script>
+             
+                    </div>
+                </div>
+             
+                <footer>
+                    <div style="text-align: center; padding: 20px;">
+                        <p>&copy; 2024 necropolistracker. All rights reserved.</p>
+                        <p>
+                            <a href="/impressum.html" target="_blank">Impressum</a> | 
+                            <a href="/cookie_policy.html" target="_blank">Cookie Policy</a>
+                        </p>
+                    </div>
+                </footer>
+        
+            </form>
+        </section>
+
+      
+        <audio id="notificationSound" src="audio.mp3" preload="auto"></audio>
+
+    <script type="module">
+     
+       
+
+// Import Supabase functions
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+
+// Supabase setup
+
+const supabaseUrl = 'https://aeobobkzmisqxlfgejum.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlb2JvYmt6bWlzcXhsZmdlanVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzEyNDM5OTUsImV4cCI6MjA0NjgxOTk5NX0.BquPT-FLwqAu-BYtWPxPWctPvIwoEwVB0PKpC0mmAd4';  // Use your actual key
+const supabase = createClient(supabaseUrl, supabaseKey);
+ 
+
+
+
+let authenticatedUser = null; // Define a global variable
+
+
+
+async function initializeAuthentication() {
+    // Check if there's already a user ID stored in localStorage
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+        // Attempt to get the current session or user info
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+            console.error('Error retrieving current user:', error.message);
+        } else if (user) {
+            authenticatedUser = user; // Set the authenticated user from session
+            console.log('Retrieved authenticated user ID from localStorage:', authenticatedUser);
+            return;
+        }
+    }
+
+    // If no stored user or session is found, authenticate as a new anonymous user
+    try {
+        const { data: { user }, error } = await supabase.auth.signInAnonymously();
+        if (error) throw new Error(error.message);
+
+        authenticatedUser = user; // Store authenticated user globally
+        console.log('Successfully authenticated:', authenticatedUser);
+        localStorage.setItem('userId', authenticatedUser.id); // Save user ID to localStorage
+    } catch (error) {
+        console.error('Authentication error:', error.message);
+    }
+}
+
+
+initializeAuthentication();
+
+window.submitVote = submitVote;
+
+let votedMaps = {};
+       
+let userVotes = {};
+let userId = localStorage.getItem('userId');
+if (!userId && authenticatedUser?.id) {
+    userId = authenticatedUser.id;
+    localStorage.setItem('userId', userId);
+} else if (!userId) {
+    // For non-authenticated users or demo purposes, generate a fallback ID
+    userId = `user-${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('userId', userId);
+}
+console.log("User ID:", userId);
+
+
+let notificationSettings = {
+        mods: [], // Array of selected mods PROPERTY
+        upvoteThreshold: 1,
+        volume: 50
+};
+
+
+
+
+
+// Reference the 'votes' table
+const ref = supabase.from('user_votes');
+
+
+
+// Store the last known list of maps and their states
+let lastKnownMaps = new Set();
+
+// Subscribe to changes (inserts and deletes)
+const votesSubscription = supabase
+    .channel('voted_maps')
+    .on('postgres_changes', {
+        event: 'INSERT',  // Detect new listings
+        schema: 'public',
+        table: 'voted_maps',
+    }, (payload) => {
+        console.log('New listing inserted:', payload.new);
+        const mapName = payload.new.map_name;
+        if (!lastKnownMaps.has(mapName)) {
+            lastKnownMaps.add(mapName);
+            displayVotedMaps();  // Trigger display update for the new map
+        }
+    })
+    .on('postgres_changes', {
+        event: 'DELETE',  // Detect deleted listings
+        schema: 'public',
+        table: 'voted_maps',
+    }, (payload) => {
+        console.log('Listing deleted:', payload.old);
+        const mapName = payload.old.map_name;
+        lastKnownMaps.delete(mapName);
+        displayVotedMaps();  // Trigger display update for the deleted map
+    })
+    .subscribe();
+
+
+
+        window.onload = function () {
+        loadVotesFromSupabase();
+  
+        checkNotificationPermission(); // Check if notifications are enabled
+};     
+        
+        const maps = [
+            "Olmec's Sanctum", "Gardens Map", "Siege Map", "Bone Crypt Map", "Scriptorium Map", "Pillars of Arun",
+            "Dark Forest Map", "Lair Map", "Dunes Map", "Tropical Island Map", "Lava Lake Map", "Dungeon Map",
+            "Carcass Map", "Flooded Mine Map", "Whakawairua Tuahu", "Acton's Nightmare", "Dry Sea Map", "Strand Map",
+            "Marshes Map", "Bog Map", "Fungal Hollow Map", "Cage Map", "Armoury Map", "Overgrown Shrine Map",
+            "Vaults of Atziri", "Hallowed Ground", "The Twilight Temple", "Mesa Map", "Cemetery Map", "Cells Map",
+            "Vaal Pyramid Map", "Vault Map", "Relic Chambers Map", "Mausoleum Map", "Moon Temple Map",
+            "Maelström of Chaos", "The Vinktar Square", "Courtyard Map", "Colonnade Map", "Summit Map",
+            "Ancient City Map", "Atoll Map", "Plateau Map", "Fields Map", "Graveyard Map", "Mao Kun",
+            "Colosseum Map", "Castle Ruins Map", "Shore Map", "Promenade Map", "Belfry Map", "Estuary Map",
+            "Defiled Cathedral Map", "The Coward's Trial", "Spider Forest Map", "Forbidden Woods Map",
+            "Bramble Valley Map", "Racecourse Map", "Channel Map", "Cursed Crypt Map", "Chateau Map",
+            "Desert Map", "Jungle Valley Map", "City Square Map", "Cold River Map", "Ramparts Map", "Silo Map",
+            "Arachnid Tomb Map", "Coral Ruins Map", "Haunted Mansion Map", "Spider Lair Map", "Toxic Sewer Map",
+            "Basilica Map", "Palace Map", "Dig Map", "Sulphur Vents Map", "Burial Chambers Map", "Malformation Map",
+            "Leyline Map", "Underground Sea Map", "Crimson Township Map", "Port Map", "Crater Map", "Pier Map",
+            "Grotto Map", "Foundry Map", "The Putrid Cloister", "Death and Taxes", "Geode Map", "Infested Valley Map",
+            "Lookout Map", "Courthouse Map", "Necropolis Map", "Museum Map", "Arcade Map", "Ashen Wood Map",
+            "Desert Spring Map", "Glacier Map", "Caldera Map", "Doryani's Machinarium", "Poorjoy's Asylum",
+            "Beach Map", "Coves Map", "Maze Map", "Residence Map", "Temple Map", "Caer Blaidd, Wolfpack's Den",
+            "Pit Map", "Alleyways Map", "Terrace Map", "Underground River Map", "Academy Map", "Orchard Map",
+            "Lighthouse Map", "Pit of the Chimera Map", "Crystal Ore Map", "Sepulchre Map", "Vaal Temple Map",
+            "Lair of the Hydra Map", "Maze of the Minotaur Map", "Forge of the Phoenix Map", "Abomination Map",
+            "Citadel Map", "Fortress Map", "Ziggurat Map", "Sanctuary Map", "Act 1 - The Coast", "Act 1 - The Tidal Island", 
+            "Act 1 - The Mudflats", "Act 1 - The Fetid Pool", "Act 1 - The Ledge", "Act 1 - The Submerged Passage", 
+            "Act 1 - The Flooded Depths", "Act 1 - The Climb", "Act 1 - The Prison", "Act 1 - Prisoner's Gate", "Act 1 - The Ship Graveyard", 
+            "Act 1 - The Ship Graveyard Cave", "Act 1 - Merveil's Cavern", 
+            "Act 2 - The Southern Forest", "Act 2 - The Riverways", "Act 2 - The Western Forest", "Act 2 - The Weaver's Chambers", "Act 2 - The Wetlands", 
+            "Act 2 - The Vaal Ruins", "Act 2 - The Northern Forest", , "Act 2 - The Dread Thicket",, "Act 2 - The Caverns", "Act 2 - The Old Field", "Act 2 - The Den",
+            "Act 2 - The Crossroads", "Act 2 - The Chamber of Sins", "Act 2 - The Broken Bridge", "Act 2 - The Fellshrine Ruins", "Act 2 - The Crypt", , "Act 2 - Ancient Pyramid",
+            "Act 3 - The City of Sarn", "Act 3 - The Slums", "Act 3 - The Crematorium", "Act 3 - The Sewers", "Act 3 - The Marketplace", "Act 3 - The Catacombs", 
+            "Act 3 - The Battlefront", "Act 3 - The Solaris Temple Level 1", "Act 3 - The Solaris Temple Level 2", "Act 3 - The Ebony Barracks", 
+            "Act 3 - The Lunaris Temple Level 1", "Act 3 - The Docks", "Act 3 - The Lunaris Temple Level 2", "Act 3 - The Imperial Gardens", 
+            "Act 3 - The Library", "Act 3 - The Archives", "Act 3 - The Sceptre of God", "Act 3 - The Upper Sceptre of God", 
+            "Act 4 - The Aqueduct", "Act 4 - The Dried Lake", "Act 4 - The Mines Level 1", "Act 4 - The Mines Level 2", "Act 4 - The Crystal Veins", 
+            "Act 4 - Kaom's Dream", "Act 4 - Daresso's Dream", "Act 4 - Kaom's Stronghold", "Act 4 - The Grand Arena", "Act 4 - The Belly of the Beast Level 1",
+            "Act 4 - The Belly of the Beast Level 2", "Act 4 - The Harvest", "Act 4 - The Ascent", 
+            "Act 5 - The Slave Pens", "Act 5 - The Control Blocks", "Act 5 - Oriath Square", "Act 5 - The Templar Courts", "Act 5 - The Chamber of Innocence", 
+            "Act 5 - The Ruined Square", "Act 5 - The Torched Courts", "Act 5 - The Ossuary", "Act 5 - The Reliquary", "Act 5 - The Cathedral Rooftop", 
+            "Act 6 - The Twilight Strand", "Act 6 - The Coast", "Act 6 - The Tidal Island", "Act 6 - The Mud Flats", "Act 6 - The Karui Fortress", 
+            "Act 6 - The Ridge", "Act 6 - The Lower Prison", "Act 6 - Shavronne's Tower", "Act 6 - Prisoner's Gate", "Act 6 - The Riverways", "Act 6 - The Wetlands", 
+            "Act 6 - The Western Forest", "Act 6 - The Southern Forest", "Act 6 - The Cavern of Anger", "Act 6 - The Beacon", "Act 6 - The Brine King's Reef", 
+            "Act 7 - The Broken Bridge", "Act 7 - The Crossroads", "Act 7 - The Fellshrine Ruins", "Act 7 - The Crypt", "Act 7 - The Chamber of Sins Level 1", 
+            "Act 7 - The Chamber of Sins Level 2", "Act 7 - Maligaro's Sanctum", "Act 7 - The Den", "Act 7 - The Ashen Fields", "Act 7 - The Northern Forest", 
+            "Act 7 - The Dread Thicket", "Act 7 - The Causeway", "Act 7 - The Vaal City", "Act 7 - The Temple of Decay Level 1", "Act 7 - The Temple of Decay Level 2", 
+            "Act 8 - The Sarn Ramparts", "Act 8 - The Toxic Conduits", "Act 8 - Doedre's Cesspool", "Act 8 - The Grand Promenade", "Act 8 - The Bath House", 
+            "Act 8 - The Quay", "Act 8 - The Grain Gate", "Act 8 - The Imperial Fields", "Act 8 - The Solaris Concourse", "Act 8 - The High Gardens", 
+            "Act 8 - The Lunaris Concourse", "Act 8 - The Solaris Temple Level 1", "Act 8 - The Solaris Temple Level 2", "Act 8 - The Lunaris Temple Level 1", 
+            "Act 8 - The Lunaris Temple Level 2", "Act 8 - The Harbour Bridge", 
+            "Act 9 - The Blood Aqueduct", "Act 9 - The Descent", "Act 9 - The Vastiri Desert", "Act 9 - The Oasis", "Act 9 - The Foothills", 
+            "Act 9 - The Boiling Lake", "Act 9 - The Tunnel", "Act 9 - The Belly of the Beast", "Act 9 - The Quarry", "Act 9 - The Refinery", "Act 9 - The Rotting Core", 
+            "Act 10 - The Cathedral Rooftop", "Act 10 - The Ravaged Square", "Act 10 - The Torched Courts", "Act 10 - The Desecrated Chambers", 
+            "Act 10 - The Canals", "Act 10 - The Control Blocks", "Act 10 - The Feeding Trough", "Act 10 - The Reliquary", "Act 10 - The Ossuary"
+            
+        ];
+        
+        // Fetch all votes from Supabase
+async function loadVotesFromSupabase() {
+        const { data, error } = await supabase.from('voted_maps').select('*').order('timestamp', { ascending: false });
+        if (error) {
+            console.error('Error loading votes:', error);
+            return;
+        }
+
+        // Store the votes in the global votedMaps object
+        votedMaps = data.reduce((map, entry) => {
+            map[entry.map_name] = entry;
+            return map;
+        }, {});
+
+        displayVotedMaps();  // Call this function to update the display
+}
+
+
+function getSelectedModifiers() {
+    const modifiers = [];
+    document.querySelectorAll('input[name="mod"]:checked').forEach((checkbox) => {
+        modifiers.push(checkbox.value);
+    });
+    return modifiers.join(', ');
+}
+
+
+
+async function confirmVote(mapInput, modifiers) {
+    const voteData = {
+        map_name: mapInput, // Adjust field name as necessary
+        modifiers: modifiers,
+        votes: 1,
+        downvotes: 0,
+        created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('voted_maps').upsert(voteData);
+    if (error) {
+        console.error('Error uploading data:', error);
+    } else {
+        console.log('Vote confirmed for', mapInput);
+        displayVotedMaps();
+    }
+}
+
+
+async function displayVotedMaps() {
+    const votedMapsList = document.getElementById('votedMapsList');
+    votedMapsList.innerHTML = ''; // Clear existing list
+
+    const { data: votedMaps, error } = await supabase
+        .from('voted_maps')
+        .select('*');
+
+    if (error) {
+        console.error('Error retrieving voted maps:', error);
+        return;
+    }
+
+    votedMaps.sort((a, b) => b.votes - a.votes);
+
+    for (const map of votedMaps) {
+        const { data: existingVote } = await supabase
+            .from('user_votes')
+            .select('vote_type')
+            .eq('user_id', authenticatedUser.id)
+            .eq('unique_vote_key', map.unique_vote_key)
+            .single();
+
+        const modifiersList = map.modifiers.join(', ');
+        const listItem = document.createElement('li');
+        listItem.className = 'voted-map-entry';
+     
+        listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Watchstones: ${map.watchstones} | Votes: ${map.votes}`;
+
+
+        if (!existingVote) {
+            // User hasn't voted yet; show buttons
+            const upvoteButton = document.createElement('button');
+            upvoteButton.textContent = 'Upvote';
+            upvoteButton.onclick = () => updateVote(map.unique_vote_key, 1);
+
+            const downvoteButton = document.createElement('button');
+            downvoteButton.textContent = 'Downvote';
+            downvoteButton.onclick = () => updateVote(map.unique_vote_key, -1);
+
+            listItem.appendChild(upvoteButton);
+            listItem.appendChild(downvoteButton);
+        } else {
+            // User has already voted; show a message or disable voting
+            const votedMessage = document.createElement('span');
+            votedMessage.textContent = ' You have already voted on this map.';
+            listItem.appendChild(votedMessage);
+        }
+
+        votedMapsList.appendChild(listItem);
+    }
+}
+
+
+
+
+
+
+function getNextHour() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0).getTime();
+}
+
+let nextResetTime = getNextHour(); // Calculate the initial next reset time
+
+function updateTimer() {
+    const now = Date.now();
+    const timeRemaining = nextResetTime - now; // Time remaining until next full hour
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    if (timerDisplay) {
+        timerDisplay.textContent = new Date(timeRemaining).toISOString().substr(14, 5); // Convert remaining time to mm:ss format
+    } else {
+        console.warn("Timer display element not found.");
+    }
+}
+
+if (window.countdownInterval) clearInterval(window.countdownInterval);
+window.countdownInterval = setInterval(updateTimer, 1000); // Update every second
+
+// Initial call to set display immediately
+updateTimer();
+
+// Handle updating the vote count (upvote or downvote)
+async function updateVote(uniqueVoteKey, voteValue) {
+    // Ensure the user is authenticated
+    if (!authenticatedUser) {
+        alert('User authentication failed!');
+        return;
+    }
+
+    if (!uniqueVoteKey) {
+        console.error("uniqueVoteKey is undefined.");
+        return;
+    }
+
+    // Check if the user has already voted
+    const { data: existingVote, error: voteError } = await supabase
+        .from('user_votes')
+        .select('vote_type')
+        .eq('user_id', authenticatedUser.id)
+        .eq('unique_vote_key', uniqueVoteKey)
+        .single();  // Retrieve a single record
+
+    if (voteError && voteError.code !== 'PGRST116') {
+        console.error('Error checking existing vote:', voteError);
+        return;
+    }
+
+    if (existingVote) {
+        alert('You have already voted for this combination.');
+        return;
+    }
+
+    // Update vote count in `voted_maps` table
+    const { error: updateError } = await supabase
+        .rpc('increment_votes', { key: uniqueVoteKey, value: voteValue });
+
+    if (updateError) {
+        console.error('Error updating vote:', updateError);
+        return;
+    }
+
+    // Record the user vote
+    const { error: insertError } = await supabase
+        .from('user_votes')
+        .insert([{
+            user_id: authenticatedUser.id,
+            unique_vote_key: uniqueVoteKey,
+            vote_type: voteValue
+        }]);
+
+    if (insertError) {
+        console.error('Error recording user vote:', insertError);
+    } else {
+        displayVotedMaps();
+    }
+}
+
+
+
+
+async function getVotes(mapName, modifiers) {
+    try {
+        const { data, error } = await supabase
+            .from('voted_maps')
+            .select('votes, downvotes, timestamp')
+            .eq('map_name', mapName)  // Query by map name
+            .contains('modifiers', modifiers)  // Match by modifiers
+            .order('timestamp', { ascending: true }); // Order by timestamp, ascending for the newest first
+
+        if (error) {
+            console.error('Error reading votes:', error);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error fetching votes:', error);
+    }
+}
+
+setInterval(() => {
+    console.log("Refreshing map list...");
+    displayVotedMaps();  // Call the function to fetch and display all maps
+}, 120000);  // 60000 ms = 1 minute
+
+function updateVotedMapsDisplay(data) {
+    const container = document.getElementById('votedMapsContainer');
+    container.innerHTML = '';  // Clear previous data
+
+    data.forEach((entry) => {
+        try {
+            // Parse the modifiers from the string to an array
+            const modifiers = JSON.parse(entry.modifiers); 
+
+            // Create a display element for each map entry
+            const mapElement = document.createElement('div');
+            mapElement.classList.add('map-entry');
+            mapElement.innerHTML = `
+                <h3>${entry.map_name}</h3>
+                <p>Modifiers: ${modifiers.join(', ')}</p>
+                <p>Votes: ${entry.votes}</p>
+                <p>Downvotes: ${entry.downvotes}</p>
+                <p>Timestamp: ${new Date(entry.timestamp).toLocaleString()}</p>
+            `;
+            container.appendChild(mapElement);
+        } catch (error) {
+            console.error('Error parsing modifiers:', error);
+        }
+    });
+}
+
+
+
+const notifiedMaps = {};
+
+function checkNotifications(mapName) {
+    const mapVotes = votedMaps[mapName];
+    if (!mapVotes) return;  // No data for this map
+    
+    const upvotes = mapVotes.votes || 0;
+    const selectedModifiers = notificationSettings.mods;
+
+    // Log values to debug
+    console.log('Map Votes:', mapVotes);
+    console.log('Selected Modifiers:', selectedModifiers);
+
+    const modifierMatch = selectedModifiers.some(mod => {
+        console.log(mapVotes.modifiers);  // Log map modifiers
+        return mapVotes.modifiers.includes(mod);
+    });
+
+    // Log for modifier match
+    console.log('Modifier Match:', modifierMatch);
+
+    if (upvotes >= notificationSettings.upvoteThreshold && modifierMatch && !notifiedMaps[mapName]) {
+        console.log(`Notifying for map: ${mapName}`);
+        notifiedMaps[mapName] = true;
+
+        const sound = document.getElementById('notificationSound');
+        sound.volume = Number(notificationSettings.volume) / 100;
+        console.log(sound);  // Check sound object before playing
+        sound.play();
+
+        const formattedModifiers = mapVotes.modifiers.join(', ').replace(/_/g, ' ');
+        alert(`Notification! ${mapName} has reached ${upvotes} upvotes with modifiers: ${formattedModifiers}`);
+        updateTabTitle(mapName, upvotes);
+    }
+
+    if (upvotes < notificationSettings.upvoteThreshold) {
+        notifiedMaps[mapName] = false;
+    }
+}
+
+const notificationStatus = document.getElementById('notificationStatus');
+
+
+function setNotifications() {
+    // Get selected mods and settings from the user input
+    const selectedMods = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+    const upvoteThreshold = Number(document.getElementById('upvoteThreshold').value);
+    const volume = Number(document.getElementById('volumeControl').value);
+
+    // Log values to check if they're being read correctly
+    console.log('Selected Mods:', selectedMods);
+    console.log('Upvote Threshold:', upvoteThreshold);
+    console.log('Volume:', volume);
+
+    // Update notification settings
+    notificationSettings.mods = selectedMods;
+    notificationSettings.upvoteThreshold = upvoteThreshold;
+    notificationSettings.volume = volume;
+
+    // Display notification status
+    notificationStatus.textContent = `Notifications set for mods: ${selectedMods.join(', ')} with threshold: ${upvoteThreshold} at volume: ${volume}%`;
+}
+
+
+
+
+function updateVolume() {
+    const volumeControl = document.getElementById('volumeControl');
+    const volumeValue = document.getElementById('volumeValue');
+    volumeValue.innerText = volumeControl.value + "%";
+    const sound = document.getElementById('notificationSound');
+    sound.volume = volumeControl.value / 100;
+}
+
+
+
+
+function updateTabTitle(mapName, upvotes) {
+        if (!window.voteCounters) window.voteCounters = {};
+
+        if (!window.voteCounters[mapName]) {
+            window.voteCounters[mapName] = 0;
+        }
+        window.voteCounters[mapName]++;
+
+        const voteCount = window.voteCounters[mapName];
+        document.title = `(${voteCount}) ${mapName} - Map Tracker`;
+
+        setTimeout(() => {
+            if (window.voteCounters[mapName]) window.voteCounters[mapName]--;
+        }, 5000); // Reset after 2 seconds to prevent overflow
+    }
+
+        let modifiers = [];
+
+        async function submitVote() {
+    const mapInput = document.getElementById('mapInput').value.trim();
+    const modifiers = Array.from(document.querySelectorAll('input[name="mod"]:checked')).map(input => input.value);
+
+    // Retrieve the selected watchstones value
+    const watchstones = document.querySelector('input[name="watchstones"]:checked').value;
+
+    // Ensure user is authenticated
+    if (!authenticatedUser || !authenticatedUser.id) {
+        alert("You must be authenticated to submit a vote.");
+        return;
+    }
+
+    const modifiersKey = modifiers.sort().join('_');
+    const uniqueVoteKey = `${mapInput}_${modifiersKey}`;
+
+    // Check if the user has already voted
+    const { data: existingVote, error: voteError } = await supabase
+        .from('user_votes')
+        .select('vote_type')
+        .eq('user_id', authenticatedUser.id)
+        .eq('unique_vote_key', uniqueVoteKey)
+        .single();
+
+    if (voteError && voteError.code !== 'PGRST116') {
+        console.error('Error checking existing vote:', voteError);
+        return;
+    }
+
+    if (existingVote) {
+        alert('You have already voted for this combination.');
+        return;
+    }
+
+    // Insert or update the voted_map record
+    const { error: voteUpdateError } = await supabase
+        .from('voted_maps')
+        .upsert([{
+            map_name: mapInput,
+            modifiers,
+            unique_vote_key: uniqueVoteKey,
+            votes: 1,  // Initial vote set as 1
+            timestamp: new Date().toISOString(),
+            user_id: authenticatedUser.id,
+            watchstones: parseInt(watchstones) // Ensure watchstones value is saved as an integer
+        }], { onConflict: ['unique_vote_key'] });
+
+    if (voteUpdateError) {
+        console.error('Error updating votes:', voteUpdateError);
+        alert('Failed to submit vote. Please try again later.');
+        return;
+    }
+
+    // Record the user vote in the user_votes table
+    const { error: userVoteError } = await supabase
+        .from('user_votes')
+        .insert([{
+            user_id: authenticatedUser.id,
+            unique_vote_key: uniqueVoteKey,
+            vote_type: 1  // Vote type set to 1 for an upvote
+        }]);
+
+    if (userVoteError) {
+        console.error('Error saving user vote:', userVoteError);
+        alert('Failed to save your vote.');
+        return;
+    }
+
+    alert(`Vote submitted for ${mapInput}!`);
+    displayVotedMaps();
+
+    // Reset the form
+    document.querySelectorAll('input[name="mod"]:checked').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('mapInput').value = '';
+    document.querySelector('input[name="watchstones"][value="0"]').checked = true; // Reset to default watchstone selection
+}
+
+
+
+        function searchMap() {
+            const input = document.getElementById('mapInput').value.toLowerCase();
+            const suggestions = maps.filter(map => map.toLowerCase().includes(input));
+            displayMapSuggestions(suggestions);
+        }
+
+        function displayMapSuggestions(suggestions) {
+            const suggestionsList = document.getElementById('mapSuggestions');
+            suggestionsList.innerHTML = "";
+            suggestions.forEach(map => {
+                const listItem = document.createElement("li");
+                listItem.textContent = map;
+                listItem.onclick = () => {
+                    document.getElementById('mapInput').value = map;
+                    suggestionsList.innerHTML = "";
+                };
+                suggestionsList.appendChild(listItem);
+            });
+        }
+    
+
+        document.getElementById('mapInput').addEventListener('input', searchMap);
+        document.getElementById('set-notifications-button').addEventListener('click', setNotifications);
+
+        
+
+        let countdownInterval;
+
+        function startTimer() {
+    clearInterval(countdownInterval); // Clear any existing intervals
+
+    countdownInterval = setInterval(() => {
+        // Get the current time
+        const now = new Date();
+        
+        // Calculate the next full hour
+        const nextHour = new Date();
+        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+        
+        // Calculate the time difference in seconds
+        const diffInSeconds = Math.floor((nextHour - now) / 1000);
+
+        // Calculate minutes and seconds
+        const minutes = Math.floor((diffInSeconds % 3600) / 60);
+        const seconds = diffInSeconds % 60;
+
+        // Format and display the timer
+        const timerDisplay = document.getElementById('timerDisplay');
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // Stop the interval if it reaches zero and reset
+        if (diffInSeconds <= 0) {
+            clearInterval(countdownInterval);
+            startTimer(); // Restart to countdown towards the next hour
+        }
+    }, 1000);
+}
+
+// Start the timer
+startTimer();
+    
+
+function checkNotificationPermission() {
+    if (Notification.permission === 'granted') {
+        console.log('Notifications are already enabled.');
+    } else if (Notification.permission === 'denied') {
+        console.log('Notifications are denied.');
+    } else {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Notifications enabled.');
+            } else {
+                console.log('Notifications denied.');
+            }
+        });
+    }
+}
+
+
+// Request notification permission from the user
+function requestNotificationPermission() {
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            console.log('Notification permission granted');
+            // Optionally, trigger the first notification here
+        } else {
+            console.log('Notification permission denied');
+        }
+    });
+}
+
+// Handle showing notifications even when the tab is in the background
+function showBackgroundNotification() {
+    if (Notification.permission === 'granted') {
+        const notification = new Notification('You have a new update!', {
+            body: 'Check out the latest content!',
+            icon: '/path/to/icon.png'
+        });
+
+        // Optionally, you can add event listeners for notification actions
+        notification.onclick = function () {
+            window.open('https://docu-ment.github.io/necropolistracker/');
+        };
+    }
+}
+
+function setupMapInputSuggestions(mapInput) {
+    mapInput.addEventListener('input', () => {
+        const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
+        const mapSuggestions = document.getElementById('mapSuggestions');
+        mapSuggestions.innerHTML = ''; // Clear previous suggestions
+
+        // Display suggestions
+        suggestions.forEach(map => {
+            const li = document.createElement('li');
+            li.textContent = map;
+            li.onclick = () => {
+                mapInput.value = map; // Set input value to selected suggestion
+                mapSuggestions.innerHTML = ''; // Clear suggestions
+            };
+            mapSuggestions.appendChild(li);
+        });
+    });
+}
+
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const timerDisplay = document.getElementById('timerDisplay');
+    const modifiers = document.getElementById('modifiersInput')?.value;
+
+    await displayVotedMaps();
+
+  
+    
+    const uniqueVoteKey = 'your_unique_key'; // Replace with actual unique key logic
+    const timestamp = new Date().toISOString();
+    const userId = authenticatedUser?.id || ''; // Ensure userId is correctly fetched from authenticatedUser
+    const watchstones = 0; // Define the watchstones value as needed
+
+
+    const voteData = {
+        map_name: mapInput.value,  // Use the map name from the input field
+        modifiers: modifiers,      // Use the value of the 'modifiersInput' field
+        unique_vote_key: uniqueVoteKey,
+        votes: 1,                  // Assuming each submission is an upvote
+        timestamp: timestamp,
+        user_id: userId,
+        watchstones: watchstones,
+        vote_type: 1              // Explicitly setting it to 1 for an upvote
+    };
+
+    await initializeAuthentication();
+
+    if (authenticatedUser) {
+        console.log('User authenticated:', authenticatedUser);
+
+        loadVotesFromSupabase();
+        checkNotificationPermission(); // Check if notifications are enabled
+
+        // Expose functions to the global scope
+        window.setNotifications = setNotifications;
+        window.submitVote = submitVote;
+        window.updateVolume = updateVolume;
+
+        // Setup map input suggestion listener
+        const mapInput = document.getElementById('mapInput');
+        if (mapInput) {
+            setupMapInputSuggestions(mapInput);
+        }
+    } else {
+        console.log('User not authenticated');
+    }
+            
+          
+            if (timerDisplay) {
+                // Your other functions
+                loadVotesFromSupabase();
+                checkNotificationPermission(); // Check if notifications are enabled
+
+                // Expose functions to the global scope
+                window.setNotifications = setNotifications;
+                window.submitVote = submitVote;
+                window.updateVolume = updateVolume;
+
+                // Map input event listener
+                const mapInput = document.getElementById('mapInput');
+                mapInput.addEventListener('input', () => {
+                    const suggestions = maps.filter(map => map.toLowerCase().includes(mapInput.value.toLowerCase()));
+                    const mapSuggestions = document.getElementById('mapSuggestions');
+                    mapSuggestions.innerHTML = ''; // Clear previous suggestions
+
+                    // Display suggestions
+                    suggestions.forEach(map => {
+                        const li = document.createElement('li');
+                        li.textContent = map;
+                        li.onclick = () => {
+                            mapInput.value = map; // Set input value to selected suggestion
+                            mapSuggestions.innerHTML = ''; // Clear suggestions
+                        };
+                        mapSuggestions.appendChild(li);
+                    });
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>
