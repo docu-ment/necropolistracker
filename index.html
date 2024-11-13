@@ -211,7 +211,7 @@
 <!-- Reddit Share Link Section -->
 <div style="margin-top: 20px; text-align: center;">
     <a href="https://www.reddit.com/r/pathofexile/comments/1gls1yb/necropolis_tracker_for_325_settlers_of_kalguur/" target="_blank" style="font-size: 18px; padding: 10px 20px; border: 2px solid #0070ba; background-color: #f7f7f7; color: #0070ba; text-decoration: none; cursor: pointer; border-radius: 5px;">
-       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken, on refresh maps show up multipe times, wait 2min for fix
+       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken
     </a>
 </div>
 
@@ -558,20 +558,7 @@ const votesSubscription = supabase
             displayVotedMaps();  // Trigger display update for the new map
         }
     })
-    .on('postgres_changes', {
-        event: 'DELETE',  // Detect deleted listings
-        schema: 'public',
-        table: 'voted_maps',
-    }, (payload) => {
-        console.log('Listing deleted:', payload.old);
-        const mapName = payload.old.map_name;
-        lastKnownMaps.delete(mapName);
-        displayVotedMaps();  // Trigger display update for the deleted map
-    })
-    .subscribe();
-
-
-
+    
         window.onload = function () {
         loadVotesFromSupabase();
   
@@ -1219,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (authenticatedUser) {
         console.log('User authenticated:', authenticatedUser);
 
-        loadVotesFromSupabase();
+       
         checkNotificationPermission(); // Check if notifications are enabled
 
         // Expose functions to the global scope
@@ -1239,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           
             if (timerDisplay) {
                 // Your other functions
-                loadVotesFromSupabase();
+           
                 checkNotificationPermission(); // Check if notifications are enabled
 
                 // Expose functions to the global scope
