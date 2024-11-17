@@ -211,14 +211,14 @@
 <!-- Reddit Share Link Section -->
 <div style="margin-top: 20px; text-align: center;">
     <a href="https://www.reddit.com/r/pathofexile/comments/1gls1yb/necropolis_tracker_for_325_settlers_of_kalguur/" target="_blank" style="font-size: 18px; padding: 10px 20px; border: 2px solid #0070ba; background-color: #f7f7f7; color: #0070ba; text-decoration: none; cursor: pointer; border-radius: 5px;">
-       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people), currently notifications are broken. Blocking false reports in the future.
+       Reddit link here, like and share the Reddit post, more people = more coverage & accuracy. <p></p>Updated Databank Version (up to 50k people). Notifications work again. Blocking users who make malicious reports or likes from submitting maps (maybe even from voting & viewing posts)(70 accounts blocked out of 31k sofar).
     </a>
 </div>
 
 <h2>Notification Settings</h2>
 <button onclick="toggleNotificationSettings()">Notification Settings hidden until fixed</button>
 
-<div id="notificationSettings" style="display: none;">
+<div id="notificationSettings" style="display: block;">   <!-- testing remove block and put none back later-->
     <p>Select mod to be notified about:</p>
     <form id="notificationForm">
         <!-- Notification Settings Content (Checkboxes and Controls) -->
@@ -693,8 +693,8 @@ async function displayVotedMaps() {
     votedMapsList.innerHTML = ''; // Clear existing list
 
     const { data: votedMaps, error } = await supabase
-        .from('voted_maps')
-        .select('*');
+       .from('voted_maps')
+       .select('*');
 
     if (error) {
         console.error('Error retrieving voted maps:', error);
@@ -704,19 +704,26 @@ async function displayVotedMaps() {
     votedMaps.sort((a, b) => b.votes - a.votes);
 
     for (const map of votedMaps) {
+        const modifierMatch = notificationSettings.mods.some((mod) => map.modifiers.includes(mod));
+
+        // Check upvote threshold and trigger notification (before generating list item)
+        if (map.votes >= notificationSettings.upvoteThreshold && modifierMatch &&!notifiedMaps[map.map_name]) {
+            notifiedMaps[map.map_name] = true;
+            triggerNotification(map.map_name, map.votes);
+        }
+
         const { data: existingVote } = await supabase
-            .from('user_votes')
-            .select('vote_type')
-            .eq('user_id', authenticatedUser.id)
-            .eq('unique_vote_key', map.unique_vote_key)
-            .single();
+           .from('user_votes')
+           .select('vote_type')
+           .eq('user_id', authenticatedUser.id)
+           .eq('unique_vote_key', map.unique_vote_key)
+           .single();
 
         const modifiersList = map.modifiers.join(', ');
         const listItem = document.createElement('li');
         listItem.className = 'voted-map-entry';
      
         listItem.textContent = `${map.map_name} | Modifiers: [${modifiersList}] | Watchstones: ${map.watchstones} | Votes: ${map.votes}`;
-
 
         if (!existingVote) {
             // User hasn't voted yet; show buttons
@@ -740,7 +747,6 @@ async function displayVotedMaps() {
         votedMapsList.appendChild(listItem);
     }
 }
-
 
 
 
@@ -1164,6 +1170,22 @@ function checkNotificationPermission() {
     }
 }
 
+
+
+function triggerNotification(mapName, upvotes) {
+    const sound = document.getElementById('notificationSound');
+    sound.volume = Number(notificationSettings.volume) / 100;
+    sound.play();
+
+    if (Notification.permission === 'granted') {
+        new Notification(`Upvote Threshold Reached!`, {
+            body: `${mapName} has reached ${upvotes} upvotes with your selected mods.`,
+            icon: '/path/to/icon.png'
+        });
+    }
+
+    updateTabTitle(mapName, upvotes);
+}
 
 // Request notification permission from the user
 function requestNotificationPermission() {
